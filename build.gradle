@@ -19,8 +19,12 @@ buildscript {
     }
 
     repositories {
+        // Aliyun mirrors first: this keeps every project on this machine resolving through
+        // the same repository ids, so one shared Gradle cache serves them all.
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         mavenCentral()
-        maven { url 'https://maven.google.com' }
         maven { url "https://jitpack.io" }
         google()
     }
@@ -39,11 +43,12 @@ buildscript {
 
 allprojects {
     repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         mavenCentral()
-        // com.github.* is only on jitpack, and this network times out connecting to maven.google.com:
-        // a connect failure aborts resolution instead of falling through, so jitpack must be probed first.
+        // com.github.* is only on jitpack, and a repository that cannot be reached aborts
+        // resolution instead of falling through, so jitpack must be probed before google().
         maven { url "https://jitpack.io" }
-        maven { url 'https://maven.google.com' }
         google()
     }
 
