@@ -10,7 +10,12 @@
 - 工作分支 `flexmark-upgrade`：上游 PR #2407 的 8 个提交 cherry-pick（flexmark 0.64.8 + minSdk 21 + androidx/commons-io）
 - 工作分支 `toolchain-upgrade`（基于 flexmark-upgrade）：Gradle wrapper 9.6.1 + AGP 9.4.0，
   前置改动是把 15 个文件里 20 处 `switch (R.*)` 改成 if/else-if 链（AGP 9 的 R 字段非 final，`case R.*` 不再是常量表达式）
-- 文档指针：`docs/flexmark-upgrade-investigation.md`（升级交接单 + 两轮计划）、`docs/markdown-reader-survey-2026-10.md`（md 阅读器调研）
+- 文档指针：`docs/flexmark-upgrade-investigation.md`（升级交接单 + 两轮计划）、`docs/markdown-reader-survey-2026-10.md`（md 阅读器调研）、
+  `docs/js-preview-libs-upgrade-2026-10.md`（预览层 JS 资产升级计划，基线清单 `docs/js-preview-libs-baseline.txt`）
+- 预览层 JS 资产（`app/thirdparty/assets/`，153 文件 / 8,371,114 B）：Prism **1.30.0（2026-10-18 Step 1 已升，本 fork 第一次动资产）**、KaTeX 0.16.10（+ mhchem 无版本标记；死资产 `auto-render.min.js` 已在 Step 2 删除）、Mermaid 11.17.2、asciidoctor.js 2.2.6、org-bundle.js（无版本标记）。版本判据与升级步骤见上面的 JS 计划单。
+  升级只能**逐文件替换**：`prism/` 下有 5 个被本地改过的文件（4 个 `-markor` + 上游改写的 `plugins/toolbar/prism-toolbar.css`），`cp -r` 会冲掉
+- **数学渲染默认关闭**：`pref_key__markdown_render_math` 默认 `false`，关掉时 markdown 里每个 `$` 被转义、KaTeX 的 css/js 完全不注入（`MarkdownTextConverter.java:273-279`）。测数学前先开这个开关
+- 预览页可用 CDP 探针量化验收（`setWebContentsDebuggingEnabled(true)` 在 `DocumentEditAndViewFragment.java:1160`），步骤与坑见 JS 计划单 §5.1
 
 ## 工具链（实测值）
 
@@ -23,12 +28,15 @@
 | Java 语言级别 | **17**（`app/build.gradle` `compileOptions` 的 source/target，产物 class major 61）。minSdk 仍 21 ⇒ 只解锁语法（`var`、箭头 switch 表达式、文本块、sealed），**Java 9+ 标准库 API 一律不可用**（`List.of` / `String.isBlank` / `Optional.isEmpty` / `Files.readString`），要用得先开 core library desugaring；records 也别用（`equals/hashCode/toString` 走 invokedynamic，minSdk 21 上 D8 无法降级） |
 | Android SDK | `D:\dev\android_sdk` |
 | GRADLE_USER_HOME | `D:\dev\.gradle` |
-| 依赖镜像 | `D:\dev\.gradle\init.d\mirror.gradle` → 阿里云 google/public/gradle-plugin，原仓库兜底 |
+| 依赖镜像 | **写在本仓库里**（`build.gradle:21-30` buildscript、`:45-53` allprojects）：阿里云 google/public（buildscript 另加 gradle-plugin）排最前，mavenCentral/jitpack/google() 兜底。**无全局 init script**（`D:\dev\.gradle\init.d\` 已清空，构建命令不再带 `-I`）；`GRADLE_USER_HOME=D:\dev\.gradle` 仍是全局共享缓存——各项目声明同一组仓库 id ⇒ 缓存只热一次 |
 
-**网络坑（实测）**：本机直连 Maven Central/Google 会静默卡死（IPv6 `SYN_SENT` 悬挂、缓存零增长），
-构建必须走上述镜像 init script；`github.com` web 直连 HTTPS 也超时，验证远端用 `gh api`。
-连不上 `maven.google.com` 时 Gradle 当作致命错误而不是"未命中"，所以只在 jitpack 上的 `com.github.*`
-必须排在它前面（`build.gradle:43-47`），否则依赖解析整体失败。
+**网络坑（2026-10-18 逐主机实测）**：唯一连不上的是 **`maven.google.com`**（旧重定向主机，curl 20s 超时 / 000）；
+`google()` 实际指向的 `dl.google.com/dl/android/maven2`、`repo.maven.apache.org`、`jitpack.io` 与阿里云全部直连可用
+（404 = 能连通，仓库根没有索引页属正常）。原先"直连 Maven Central/Google 会静默卡死、必须走镜像 init script"是错的记录，
+`build.gradle` 里两处硬编码的 `maven { url 'https://maven.google.com' }` 已删除。`github.com` web 直连 HTTPS 仍超时，验证远端用 `gh api`。
+Gradle 把连不上的仓库当**致命错误**而不是"未命中"，所以只在 jitpack 上的 `com.github.*` 必须排在可能失败的主机之前（`build.gradle:49-52`）。
+**依赖缓存按仓库 id 分键**：改动项目声明的仓库列表会让已存在的产物被判为未命中而重新联网——构建起不来先核对仓库列表，别急着怀疑"缺包"。
+定位过程见 `docs/js-preview-libs-upgrade-2026-10.md` §5.3。
 
 ## 构建
 
