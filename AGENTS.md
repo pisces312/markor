@@ -12,7 +12,7 @@
   前置改动是把 15 个文件里 20 处 `switch (R.*)` 改成 if/else-if 链（AGP 9 的 R 字段非 final，`case R.*` 不再是常量表达式）
 - 文档指针：`docs/flexmark-upgrade-investigation.md`（升级交接单 + 两轮计划）、`docs/markdown-reader-survey-2026-10.md`（md 阅读器调研）、
   `docs/js-preview-libs-upgrade-2026-10.md`（预览层 JS 资产升级计划，基线清单 `docs/js-preview-libs-baseline.txt`）
-- 预览层 JS 资产（`app/thirdparty/assets/`，153 文件 / 8,371,114 B）：Prism **1.30.0（2026-10-18 Step 1 已升，本 fork 第一次动资产）**、KaTeX 0.16.10（+ mhchem 无版本标记；死资产 `auto-render.min.js` 已在 Step 2 删除）、Mermaid 11.17.2、asciidoctor.js 2.2.6、org-bundle.js（无版本标记）。版本判据与升级步骤见上面的 JS 计划单。
+- 预览层 JS 资产（`app/thirdparty/assets/`，153 文件 / 8,044,376 B）：Prism **1.30.0（2026-10-18 Step 1 已升，本 fork 第一次动资产）**、KaTeX **0.19.0（同日 Step 3 已升：css/js/mhchem + 60 字体共 63 个文件，字体从 1,402,440 B 瘦到 1,076,572 B；死资产 `auto-render.min.js` 已在 Step 2 删除）**、Mermaid 11.17.2、asciidoctor.js 2.2.6、org-bundle.js（无版本标记）。版本判据与升级步骤见上面的 JS 计划单。
   升级只能**逐文件替换**：`prism/` 下有 5 个被本地改过的文件（4 个 `-markor` + 上游改写的 `plugins/toolbar/prism-toolbar.css`），`cp -r` 会冲掉
 - **数学渲染默认关闭**：`pref_key__markdown_render_math` 默认 `false`，关掉时 markdown 里每个 `$` 被转义、KaTeX 的 css/js 完全不注入（`MarkdownTextConverter.java:273-279`）。测数学前先开这个开关
 - 预览页可用 CDP 探针量化验收（`setWebContentsDebuggingEnabled(true)` 在 `DocumentEditAndViewFragment.java:1160`），步骤与坑见 JS 计划单 §5.1
@@ -56,7 +56,7 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 - debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v163-2.16.1-flavorDefault-debug.apk`
   （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
   文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
-- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11521389 字节**（`57d789a6` 那次）
+- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11,274,486 字节**（2026-10-18 Step 3 KaTeX 之后；`57d789a6` 那次是 11,521,389）
   （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），R8 minify ~40s，
   dex 从 debug 的 18 个合成 2 个；**构建日志已零 WARNING**——flexmark 桌面端类引用由 `app/proguard-rules.pro`
   末尾 7 条精确 `-dontwarn`（java.awt / java.beans / javax.imageio / javax.lang.model / javax.swing /

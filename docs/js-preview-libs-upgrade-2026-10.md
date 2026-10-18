@@ -14,15 +14,16 @@
 - **Step 0 已做完（2026-10-18），并且当场推翻了本单初稿的两处推断**（详见 §3.2、§4 Step 4）。升级判据由此确定为主用 **CDP DOM 探针**（§5），截图为辅。
 - **Step 1（Prism 1.30.0）已做完并验收通过**（2026-10-18）：实际只改 2 个文件各 1 行，不是初稿写的"11 个产物"（§4 Step 1）。同一天 release 构建被一次仓库配置故障挡住，根因与本仓库的修法见 §5.3。
 - **Step 2（删 `katex/auto-render.min.js`）已做完**（2026-10-18）：全仓零引用，删除后清单只差这一行。
+- **Step 3（KaTeX 0.19.0）已做完并验收通过**（2026-10-18）：63 个文件（css/js/mhchem + 60 字体）整批换，`katexVer` 0.16.10→0.19.0，其余 DOM 读数逐项不变，顶部截图差异只在状态栏；"字体有没有换对"改用 CDP `CSS.getPlatformFontsForNode` 量化（§4 Step 3）。
 
-## 1. 现状（实测 2026-10-18，已含 Step 1 + Step 2）
+## 1. 现状（实测 2026-10-18，已含 Step 1 + Step 2 + Step 3）
 
-资产合计 8,371,114 B / **153** 个文件（升级前 8,376,499 B / 154；差值 = Step 2 删掉的 `auto-render.min.js` 3,481 B + Step 1 `prism.js` 的行尾归一化 1,904 B，见 Step 1 的"行尾口径"），逐文件 sha256(前16位)|字节|路径 见 `docs/js-preview-libs-baseline.txt`（**该清单每过一步就地推进一次**，所以它始终等于当前 HEAD 工作树）。
+资产合计 8,044,376 B / **153** 个文件（升级前 8,376,499 B / 154；差值 = Step 2 删掉的 `auto-render.min.js` 3,481 B + Step 1 `prism.js` 的行尾归一化 1,904 B + **Step 3 KaTeX 字体瘦身 326,738 B**，见 Step 3 与 Step 1 的"行尾口径"），逐文件 sha256(前16位)|字节|路径 见 `docs/js-preview-libs-baseline.txt`（**该清单每过一步就地推进一次**，所以它始终等于当前 HEAD 工作树）。
 
 | 库 | 版本判据（怎么读出来的） | 现版本 | 体积 | 加载点 |
 |---|---|---|---|---|
 | Prism | `prism/version` 文件内容 `Prism v1.30.0` | **1.30.0**（Step 1 已升） | 约 208 KB（core 58,240 + components 129,466 + plugins 14,954 + themes/css） | `MarkdownTextConverter.java:381-394`（`getViewHlPrismIncludes`），注入顺序见该函数 |
-| KaTeX | `katex.min.js` 内 `version:"0.16.10"` | 0.16.10 | 1,738,632 B（其中 `fonts/` 1,402,440 B） | `:101-104`（css + katex.min.js + katex-render.js + mhchem.min.js），`:105` 一条 `.katex{font-size:inherit}`；**受 `:273-279` 的开关控制，默认不注入**（§1.5） |
+| KaTeX | `katex.min.js` 内 `version:"0.19.0"` | **0.19.0**（Step 3 已升） | 1,408,413 B（其中 `fonts/` 1,076,572 B；升级前 1,738,632 / 1,402,440 B） | `MarkdownTextConverter.java:101-104`（css + katex.min.js + katex-render.js + mhchem.min.js），`:105` 一条 `.katex{font-size:inherit}`；**受 `:273-279` 的开关控制，默认不注入**（§1.5） |
 | Mermaid | `mermaid/version-info.txt` + bundle 内 `"11.17.2"` ×3 | 11.17.2 | 3,572,661 B（占全部资产 43%） | `:107` 注入 + `:288-293` 条件 `mermaid.initialize(...)` |
 | asciidoctor.js | bundle 头注释 `Asciidoctor.js 2.2.6` | 2.2.6 | 761,769 B（+ css 32 KB） | `AsciidocTextConverter.java:27,28,34`，JS API 调用在 `:52` |
 | org-js | bundle 内**无版本标记**（webpack bootstrap） | 未知 | 55,788 B | `OrgmodeTextConverter.java:19`，JS API 调用在 `:44` |
@@ -69,7 +70,7 @@
   - 占位的 class 由 vendored 扩展写死：`app/thirdparty/java/.../FlexmarkKatexExtension.java:85-86`（`INLINE_MATH_CLASS` / `DISPLAY_MATH_CLASS` 默认值都是 `"katex"`）；
   - 0.19.0 的 `katex.min.css` 里 `.katex` 仍出现 379 次（0.16.10 是 378 次），新增的是 `.katex-sizing`(121) / `.katex-inner`(7) 这类**带前缀的内部类**；Markor 只自定义了 `.katex{font-size:inherit}`（`:105`）→ **不冲突，无需改 Java/JS**。
   - 0.19.0 的另一条 BREAKING 是 `strict` 默认行为（缺字符度量 → `symbolNotInFont` 走 warn/callback）。Markor 没传 `strict`，影响只是控制台噪声。
-- 字体：0.16.10 与 0.19.0 的 `dist/fonts` 都是 **60 文件 / 20 族**（实测 tarball 列表 vs 仓内列表）→ 整目录替换，不用挑。
+- 字体：0.16.10 与 0.19.0 的 `dist/fonts` 都是 **60 文件 / 20 族**，且**文件名逐一对得上**（`diff` 两份 `ls` 结果为空、两版 `katex.min.css` 各引用同样的 60 个 `url(fonts/…)`，无重命名）→ 整目录替换，不用挑。但**字节全变了**：0.16.10 的 `fonts/` 1,402,440 B → 0.19.0 的 1,076,572 B（−325,868 B，60 个文件全部变小，字体重新裁剪过）。Step 3 实测 60 个字体文件的 sha256 全部改变，无一命中旧值。
 - `katex/auto-render.min.js`（3,481 B）全仓零引用（`grep -ril "auto-render"` 只命中它自己）→ **死资产，升级时顺手删**，不要"因为它在 katex 目录里就一起更新"。
 
 ### 3.2 Mermaid 是大版本跳跃，而且"围栏 → 元素"这一步在库里而不在 Java 里
@@ -152,11 +153,34 @@ APK 内部也直接验了，不靠任务名推断：`unzip -p <debug.apk> assets
 
 一处如实报出的余留疑问：debug APK 字节数 15,149,394 → 15,073,198（−76,196 B），远大于被删文件的 3,481 B。条目清单已核对一致，所以差值来自 zip 对齐/deflate 边界的填充位移（APK 共 1,682 个条目），不是内容变化；release 包侧下一步重新记一次字节数为准。
 
-### Step 3 · KaTeX 0.16.10 → 0.19.0
+### Step 3 · KaTeX 0.16.10 → 0.19.0 —— ✅ 已完成（2026-10-18）
 
-从 `katex-0.19.0.tgz` 取 4 处：`dist/katex.min.css`、`dist/katex.min.js`、`dist/fonts/*`（整目录）、`dist/contrib/mhchem.min.js`。
-**不取** `dist/contrib/auto-render.*`（Step 2 已删）。`katex-render.js` 是 fork 自有文件，**保持不动**；若 0.19 需要新选项再单独评估。
-验收：先确认 `pref_key__markdown_render_math` 已开（§1.5 前置条件 1，否则 KaTeX 根本不注入），再跑探针：`katexVer` 变 0.19.0、`.katex` 14 / `.katex .katex-html` 7 / `.katex-error` 0 三个数不得劣化；然后看行内 `$...$`、块级 `$$...$$`、`\ce{}` 化学式与数学字体是否正常（字体没换对的表现是数学渲染成普通衬线字）。
+从 `katex-0.19.0.tgz`（sha512 `v6Tznz3z…Xpdw/Q==` 对上 registry `dist.integrity`，1,499,743 B）取 4 处：`dist/katex.min.css`、`dist/katex.min.js`、`dist/fonts/*`（整目录 60 文件）、`dist/contrib/mhchem.min.js`。
+**不取** `dist/contrib/auto-render.*`（Step 2 已删）。`katex-render.js` 是 fork 自有文件，**保持不动** —— 实测 0.19 不需要新选项，`katex.render(text, elem, {throwOnError:false, displayMode})` 这条调用签名未变。
+
+改动 = **63 个文件**（css 23,198→24,793、js 275,309→272,868、mhchem 33,730→33,706、60 个字体 1,402,440→1,076,572 B），无新增无删除，`git status` 恰好 63 个 `M`；资产清单 diff 也只有这 63 行，非 katex 路径零命中。
+
+验收（`pref_key__markdown_render_math` 已确认在设备上为 `true`）：
+
+| 判据 | Step 2 后 | Step 3 后 |
+|---|---|---|
+| `katexVer` | 0.16.10 | **0.19.0** |
+| `katexSpans` / `katexRendered` / `katexErrored` | 14 / 14 / 0 | **14 / 14 / 0** |
+| `mhchem`（`renderToString("\\ce{H2O}")` 无 error） | true | **true** |
+| Prism 六块 token、`prismLangs`、`autoloaderPath` | 17,10,12,11,5,52 · 28 · `…/prism/components/` | **逐项相同** |
+| Mermaid `divs/svg/error` | 1 / 1 / false | **1 / 1 / false** |
+| 顶部截图逐像素比对 | — | **893 / 2,592,000 px = 0.034%，全部落在 y=47..81（状态栏时钟）** |
+
+**"字体没换对 ⇒ 渲染成普通衬线字"这条判据做成了量化检查**，脚本 `D:\workspace\js-libs\katex_font_probe.py`（走 CDP 的 `CSS.getPlatformFontsForNode`，读的是真实绘字字体，不是猜）：
+
+- `.katex .mop`（∫）→ `KaTeX_Size2` `isCustomFont=true`；`.katex .mathnormal`（x）→ `KaTeX_Math`；`.katex .mrel` → `KaTeX_Main`；对照节点 `p` → `Roboto` `isCustomFont=false`（证明这个探针确实能分辨回退）。
+- `document.fonts` 声明 12 个 KaTeX 族，本 fixture 用到的 `KaTeX_Main/Math/Size2` = `loaded`，其余 `unloaded`（浏览器按需加载，不是缺文件）；`check("1em KaTeX_Main")` = true。
+- 同一段 `\int_0^1 x^2 dx`：KaTeX 排版宽 55.73 px，serif 回退宽 68.45 px（比值 0.814）→ 用的是 KaTeX 自己的度量。
+- 人眼复核：`shots/step3/probe-math.png` 里行内 `E=mc^2`、`α_i+β^2≤γ`，块级 `∫_{-∞}^{∞} e^{-x^2}dx=√π`、`∂u/∂t=c^2∇^2u`，mhchem `2H_2+O_2→2H_2O`、`CaCO_3⇌Ca^{2+}+CO_3^{2-}` 全部正常。
+
+构建侧：release 包 **11,274,486 B**（Step 2 后 11,519,670 B，−245,184 B；字体是压缩存储所以降幅小于目录差值），构建日志零 WARNING，`apksigner verify -v` 仍 v1+v2+v3 = true / v4 = false；包内 `assets/katex/` 64 条（css + js + mhchem + render + 60 字体），`katex.min.js` sha `103a53763cc033bb`、内嵌 `version:"0.19.0"`、`KaTeX_AMS-Regular.woff2` 28,076 B = tarball 那份。单测 `178 tests completed, 11 failed`，与基线逐条一致。
+
+§3.1 预判的两条 BREAKING 落地复核：`.katex` 选择器未冲突（`katex-render.js` 与 `FlexmarkKatexExtension` 零改动，DOM 计数不变即证）；`strict` 默认行为变化在设备上无可见影响（`katexErrored` 仍 0，截图无异常）。
 
 ### Step 4 · ~~决策项：Prism autoloader 的 `languages_path`~~ —— 本单初稿误判，已作废
 
@@ -196,7 +220,9 @@ python D:/workspace/js-libs/cdp_eval.py "$WS" 'JSON.stringify({katexVer:typeof k
 要点（都是踩过的）：
 
 - 打开文件**必须**用 `-n $P/net.gsantner.markor.activity.DocumentActivity` + `-t "text/markdown"`；对 `MainActivity` 发 `file://` VIEW 只会落到文件列表，不会打开文档。
-- 预览是**新起的 WebView 进程**，`/proc/net/unix` 里会有两个 `webview_devtools_remote_<pid>`，要取新的那个再 forward。
+- 预览是**新起的 WebView 进程**，`/proc/net/unix` 里会有两个 `webview_devtools_remote_<pid>`。**别照 pid 大小猜**：把两个各 forward 到一个端口，`curl -s http://127.0.0.1:9223/json` 里**有 `type:"page"` 目标的那个才是预览**（另一个返回空数组）。预览页的 url/title 都显示 `about:blank`，所以只能靠"有没有 page 目标"分辨。
+- 点预览按钮的坐标别硬记：`uiautomator dump //sdcard/ui.xml` 之后 `tr '>' '\n' | grep action_preview | sed -n 's/.*bounds="\([^"]*\)".*/\1/p'` 取中心点（本机 1080×2400 上是 `[765,138][870,264]` → 817,201）。
+- **数学字体有没有真的换上，用 `CSS.getPlatformFontsForNode` 判定，别看截图猜**：`D:\workspace\js-libs\katex_font_probe.py` 走 DOM/CSS 域读真实绘字字体（`.mop`→`KaTeX_Size2`、`.mathnormal`→`KaTeX_Math`、对照 `p`→`Roboto` `isCustomFont=false`），并量同一段公式在 KaTeX 排版与 serif 回退下的宽度比。Step 3 就是这么确认的。
 - `cdp_eval.py` 是零依赖的 stdlib WebSocket 客户端（`D:\workspace\js-libs\`），因为本机没有可用的 ws 库；表达式里只用双引号，整条用单引号包给 bash。
 - 数学探针前要先开 `pref_key__markdown_render_math`：`adb root` → 改 `/data/data/$P/shared_prefs/app.xml` 加 `<boolean name="pref_key__markdown_render_math" value="true" />` → `cp` 回去（cp 覆盖会保留原 owner，无需 chown）→ force-stop 生效。`run-as` 读不到 `/sdcard`，`adb push` 到 `/data/local/tmp` 会 `fchown failed`，这两条都试过不通。
 
