@@ -46,8 +46,10 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 
 - 版本：`versionName 2.16.1` / `versionCode 163`（`app/build.gradle:26-27`）
 - debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v163-2.16.1-flavorDefault-debug.apk`
-  （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`）
-- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11525666 字节**，
+  （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
+  文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
+- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11525704 字节**
+  （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），
   R8 minify 46s 完成，dex 从 debug 的 18 个合成 2 个；唯一 R8 告警是 flexmark 引用 `java.awt.*`（桌面端代码路径，可忽略）
 - 单元测试：`./gradlew testFlavorDefaultDebugUnitTest`
   基线：178 跑 / **11 失败**，全部在 `WikitextLinkResolverTests`（链接串里的 `:` 在 Windows 上是非法路径字符）
@@ -57,6 +59,32 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
   新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`
 - 日志读取坑：PowerShell `>` 重定向写出 UTF-16LE，先 `iconv -f UTF-16LE -t UTF-8` 再 grep
 - PowerShell 调用坑：bash 里包 `-Command` 参数用单引号，否则 `$env` 被 bash 吞掉
+
+## 代码风格
+
+- AOSP Java Code Style；提交前用 Android Studio 的 auto reformat（`README.md:138`）。
+  注意别对 `AndroidManifest.xml` 自动格式化（文件头有 `Do NOT run auto format on this file`）
+
+## debug / release 共存
+
+- `buildTypes.debug { applicationIdSuffix ".debug" }`（`app/build.gradle:81-86`）
+  ⇒ debug 包名 `net.gsantner.markor.debug`，release 仍 `net.gsantner.markor`，两者可同时安装。
+  刻意**不加** `versionNameSuffix`：APK 文件名末尾已有 `-flavorDefault-debug`，再加会变成两个 debug 字样
+- **零 Java 改动**：BuildConfig / R 生成在 `namespace`（`app/build.gradle:105`）下，不是 applicationId 下，所以
+  `resValue "manifest_package_id", "net.gsantner.markor"`（`:24`）→ `GsContextUtils.getAppIdUsedAtManifest()`（`:347`）
+  反射 `net.gsantner.markor.BuildConfig` 照样命中。现成反证：flavorAtest 的 applicationId 早就是
+  `net.gsantner.markor_test`，它的 BuildConfig 仍在 `net/gsantner/markor/`。Provider authority
+  `${applicationId}.provider`（`AndroidManifest.xml:145`）自动跟着分裂
+- 图标区分靠 buildType 资源覆盖层 `app/src/debug/res/`：`drawable/ic_launcher_background.xml`
+  （自适应底色 #eaeaea→#a5d6a7、顶栏 #797c76→#2e7d32）+ 5 个密度的 `drawable-*/ic_launcher.png`（同一改色的位图版）。
+  清单不用动（`android:icon="@drawable/ic_launcher"` 资源名未变）；API<26 读 PNG，API26+ 读自适应 XML，两条路都覆盖
+- 实测（emulator-5554）：`pm list packages` 两包并存（两者 `versionName` 都是 2.16.1，靠包名+图标区分）；debug 包内
+  `res/drawable-xxxhdpi-v4/ic_launcher.png` 与 `src/debug` 逐字节一致，release 包内仍是 `src/main` 那张；
+  编译后的 debug `ic_launcher_background.xml` 含 #ffa5d6a7/#ff2e7d32、不含原灰值；应用抽屉里两个 Markor 并排
+- 隔离：SharedPreferences、运行时权限、私有目录各自独立（debug 首装要重新授权、会走 Intro）；
+  **笔记本目录共用** `Documents/markor`（`AppSettings.getDefaultNotebookFile()` 由 `app_name` 字符串推出，与包名无关）
+  ⇒ 方便 A/B 对比渲染，但别两边同时编辑同一个文件。deep-link scheme `markor` 两包都注册，从别的 App 打开会弹选择框
+- 别拿改 `app_name` 的方式区分标签——那会把 debug 的笔记本目录变成 `Documents/markor debug`
 
 ## 签名
 

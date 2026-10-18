@@ -78,6 +78,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Separate applicationId so the debug build installs next to the release one.
+            // BuildConfig/R stay under `namespace`, so manifest_package_id keeps working.
+            // No versionNameSuffix: the APK name already ends in "-flavorDefault-debug".
+            applicationIdSuffix ".debug"
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
