@@ -77,8 +77,8 @@ e14fed02b1aba7ce|16028|katex/fonts/KaTeX_Typewriter-Regular.woff
 d4ab5b8ee16989b0|24793|katex/katex.min.css
 103a53763cc033bb|272868|katex/katex.min.js
 aaf20145c0b8ecd4|33706|katex/mhchem.min.js
-581ed7d74bd9048d|3572661|mermaid/mermaid.min.js
-b94f4873ad48c918|93|mermaid/version-info.txt
+a8a6a6f805b074a8|5494801|mermaid/mermaid.min.js
+3f59adab087faf49|92|mermaid/version-info.txt
 b6d0aaff18150e40|55788|orgmode/org-bundle.js
 5e8af5f32e010234|44|orgmode/org.css
 a95687e2b53325f2|1087|prism/LICENSE

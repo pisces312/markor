@@ -15,16 +15,17 @@
 - **Step 1（Prism 1.30.0）已做完并验收通过**（2026-10-18）：实际只改 2 个文件各 1 行，不是初稿写的"11 个产物"（§4 Step 1）。同一天 release 构建被一次仓库配置故障挡住，根因与本仓库的修法见 §5.3。
 - **Step 2（删 `katex/auto-render.min.js`）已做完**（2026-10-18）：全仓零引用，删除后清单只差这一行。
 - **Step 3（KaTeX 0.19.0）已做完并验收通过**（2026-10-18）：63 个文件（css/js/mhchem + 60 字体）整批换，`katexVer` 0.16.10→0.19.0，其余 DOM 读数逐项不变，顶部截图差异只在状态栏；"字体有没有换对"改用 CDP `CSS.getPlatformFontsForNode` 量化（§4 Step 3）。
+- **Step 5（Mermaid 12.2.0）已做完并验收通过**（2026-10-18）：单文件替换，`div.mermaid[data-processed] svg` 仍为 1、`logLevel:5` 数字写法 v12 仍接受、四个节点名与边标签文本一个没丢；可见差异是 v12 的新样式（节点带 drop-shadow）。代价是 bundle +1,922,140 B、release 包 +593,295 B。**至此本单三项升级全部落地。**
 
-## 1. 现状（实测 2026-10-18，已含 Step 1 + Step 2 + Step 3）
+## 1. 现状（实测 2026-10-18，Step 0-5 全部完成）
 
-资产合计 8,044,376 B / **153** 个文件（升级前 8,376,499 B / 154；差值 = Step 2 删掉的 `auto-render.min.js` 3,481 B + Step 1 `prism.js` 的行尾归一化 1,904 B + **Step 3 KaTeX 字体瘦身 326,738 B**，见 Step 3 与 Step 1 的"行尾口径"），逐文件 sha256(前16位)|字节|路径 见 `docs/js-preview-libs-baseline.txt`（**该清单每过一步就地推进一次**，所以它始终等于当前 HEAD 工作树）。
+资产合计 **9,966,515 B / 153 个文件**（升级前 8,376,499 B / 154，净 **+1,590,016 B** = Mermaid +1,922,139 − KaTeX 326,738 − auto-render 3,481 − prism.js 行尾归一化 1,904；逐项拆解见各 Step），逐文件 sha256(前16位)|字节|路径 见 `docs/js-preview-libs-baseline.txt`（**该清单每过一步就地推进一次**，所以它始终等于当前 HEAD 工作树）。
 
 | 库 | 版本判据（怎么读出来的） | 现版本 | 体积 | 加载点 |
 |---|---|---|---|---|
 | Prism | `prism/version` 文件内容 `Prism v1.30.0` | **1.30.0**（Step 1 已升） | 约 208 KB（core 58,240 + components 129,466 + plugins 14,954 + themes/css） | `MarkdownTextConverter.java:381-394`（`getViewHlPrismIncludes`），注入顺序见该函数 |
 | KaTeX | `katex.min.js` 内 `version:"0.19.0"` | **0.19.0**（Step 3 已升） | 1,408,413 B（其中 `fonts/` 1,076,572 B；升级前 1,738,632 / 1,402,440 B） | `MarkdownTextConverter.java:101-104`（css + katex.min.js + katex-render.js + mhchem.min.js），`:105` 一条 `.katex{font-size:inherit}`；**受 `:273-279` 的开关控制，默认不注入**（§1.5） |
-| Mermaid | `mermaid/version-info.txt` + bundle 内 `"11.17.2"` ×3 | 11.17.2 | 3,572,661 B（占全部资产 43%） | `:107` 注入 + `:288-293` 条件 `mermaid.initialize(...)` |
+| Mermaid | `mermaid/version-info.txt` + bundle 内 `"12.2.0"` ×1 | **12.2.0**（Step 5 已升） | 5,494,801 B（升级前 3,572,661 B；占全部资产 55%） | `:107` 注入 + `:288-293` 条件 `mermaid.initialize(...)` |
 | asciidoctor.js | bundle 头注释 `Asciidoctor.js 2.2.6` | 2.2.6 | 761,769 B（+ css 32 KB） | `AsciidocTextConverter.java:27,28,34`，JS API 调用在 `:52` |
 | org-js | bundle 内**无版本标记**（webpack bootstrap） | 未知 | 55,788 B | `OrgmodeTextConverter.java:19`，JS API 调用在 `:44` |
 
@@ -75,10 +76,11 @@
 
 ### 3.2 Mermaid 是大版本跳跃，而且"围栏 → 元素"这一步在库里而不在 Java 里
 
-- 配置写法是老式：`:291-293` 拼出 `mermaid.initialize({theme:'dark'|'default',logLevel:5,securityLevel:'loose'})`。`logLevel` 用**数字 5** 属于旧接口，v11.17.2 实测接受（图正常渲染），v12 是否仍接受**未实测**，是 Step 5 的检查点之一（若被拒就换成字符串）。
+- 配置写法是老式：`:291-293` 拼出 `mermaid.initialize({theme:'dark'|'default',logLevel:5,securityLevel:'loose'})`。`logLevel` 用**数字 5** 属于旧接口，v11.17.2 实测接受，**v12.2.0 也已实测接受**（Step 5：图正常渲染、无 `Syntax error in text`，Java 侧零改动）→ 这条不再是风险，但它是"未升级前不要主动改成字符串"的理由。
 - **本单初稿在这里判断错过一次**：当时按"Java 侧没有任何代码生成 `.mermaid` 元素"推断 mermaid 图其实没渲染。Step 0 实测推翻：`div.mermaid` 确实存在并出了 SVG。真实机制是 **mermaid 自己**把 `pre > code.language-mermaid` 改写成 `div.mermaid`（`data-processed="true"`，并沿用 flexmark 的 `line` 属性）；证据是同一文档里 ` ```notalang ` 与 ` ```mermaid2 ` 仍是 `pre > code`，只有 `mermaid` 被转换。
-  → 于是 Step 5 的**头号风险变成"v12 是否保留这条 code-block 改写"**，而不是"要不要补 Java"。判据固定为：同一 fixture 下 `div.mermaid[data-processed] svg` 数量仍为 1。
-- 体积：单文件 3,572,661 B = 全部 thirdparty 资产的 43%，也是 release 包 11.5 MB 的显著构成。升 v12 后体积可能继续变，需要在 Step 5 记录 release APK 字节数。
+  → 于是 Step 5 的**头号风险变成"v12 是否保留这条 code-block 改写"**，而不是"要不要补 Java"。判据固定为：同一 fixture 下 `div.mermaid[data-processed] svg` 数量仍为 1。**Step 5 实测：保留**（`div.mermaid` 1、`[data-processed]` 1、`svg` 1，`notalang`/`mermaid2` 仍是 `pre > code`）。
+  补充一条：两版 bundle 里都**搜不到字面量 `language-mermaid`**（各 0 次命中，`language-` 仅 1 次），所以这条改写不是按该字面量匹配的——判"改写有没有坏"只能读 DOM，别指望 grep 源码定位（Step 0 那条教训的又一例）。
+- 体积：升级前单文件 3,572,661 B = 全部 thirdparty 资产的 43%；**升到 12.2.0 后 5,494,801 B（+1,922,140 B），占全部资产 55%**，release 包 11,274,486 → 11,867,781 B（+593,295 B，deflate 后增幅只有 bundle 的三成）。它仍是这一个库里最贵的一项，下次升级前先看这个数字。
 
 ### 3.3 有 5 个文件被本地改过，不能被上游覆盖
 
@@ -190,9 +192,30 @@ APK 内部也直接验了，不靠任务名推断：`unzip -p <debug.apk> assets
 
 **但这正好把 Step 1 的真实风险暴露出来**：Prism **1.30.0 的 release note 只有一条改动** —— *"check that `currentScript` is set by a script tag"*（PR #3863），改的就是这条推导链。所以 Step 1 换完文件后必须重跑 §5 的 Prism 探针，`prismLangs` 与 `tokensPerBlock` 不得倒退；只看代码块"有没有颜色"不够，因为预置的 javascript/yaml 那几个即使 autoloader 失效也可能看起来正常。
 
-### Step 5 · Mermaid 11 → 12（单独一轮）
+### Step 5 · Mermaid 11 → 12（单独一轮）—— ✅ 已完成（2026-10-18，判定为可升）
 
-换 `mermaid.min.js` 单文件 + 改 `version-info.txt`。验收以 §1.5 那行为准：`div.mermaid[data-processed] svg` 仍为 1、无 "Syntax error in text"；再逐条检查 `:291-293` 的配置项在 v12 是否仍被接受（`logLevel:5` 数字写法是首要嫌疑，v11.17.2 实测接受）。**若 code-block 改写被移除（`div.mermaid` 变回 `pre > code.language-mermaid`），本步判定为不可升，除非用户同意在 Java 侧补元素生成。** 记录 release APK 字节数变化。
+换 `mermaid.min.js` 单文件 + 改 `version-info.txt`（格式沿用原文件：无结尾换行，93→92 B）。来源 `mermaid-12.2.0.tgz`（sha512 `w7nr/SFr…tOiHzw==` 对上 registry `dist.integrity`，25,955,888 B），取 `dist/mermaid.min.js`；仓内那份 11.17.2 与 npm `dist/mermaid.min.js` **字节数完全相同**（3,572,661 B），证明当初就是走同一产物，替换是同一条链上的对换。
+
+三个风险点逐条实测：
+
+1. **code-block 改写仍在**（本步的"不可升"判据）：`div.mermaid` = 1、`div.mermaid[data-processed]` = 1、其内 `svg` = 1；同一文档里 `notalang` / `mermaid2` 两个围栏**仍然是 `pre > code`**（探针 `stillCodeBlocks` 逐项列出）。→ 不需要在 Java 侧补元素生成。
+2. **`logLevel:5` 数字写法 v12 仍接受**：`MarkdownTextConverter.java:291-293` 那行配置零改动，图正常出、`Syntax error in text` 未出现。§3.2 记的"未实测"就此闭合。
+3. **图形内容没丢，但画法变了**（v11 / v12 各装一个 APK，用同一表达式 `D:\workspace\js-libs\mermaid_geom.py` 量的）：
+
+   | 字段 | 11.17.2 | 12.2.0 |
+   |---|---|---|
+   | `svg.viewBox` 盒 | 539.94 × 172.10 | **668.57 × 193.03**（+23.8% × +12.2%） |
+   | 渲染宽 / 高 | 367 / 117 px | 367 / **106** px |
+   | `g.node` / `path.flowchart-link` | 4 / 4 | **4 / 4** |
+   | `.nodeLabel` | 4 | **4** |
+   | `.edgeLabel` / `foreignObject` | 8 / 8 | **2 / 5** |
+   | 字体族 | `"trebuchet ms", verdana, arial, sans-serif` | 同值 |
+
+   `.edgeLabel` 8→2 不是丢标签：SVG 文本里 4 个节点名 + `Link text` 全在（v11 给每条边都建了标签元素，v12 只给有字的建）。另外 v12 的 SVG 内嵌样式里出现 `[data-look="neo"]`、`.collapsed-indicator`、`.swimlane.cluster` 这类 v11 没有的规则，节点带上了 `drop-shadow` —— **截图上能直接看出图形观感变新**，这是本步唯一可见的行为差异，属预期内的上游样式改动。
+
+其余 DOM 读数与 Step 3 逐项相同（`prismLangs` 28、六块 token、`katexSpans/Rendered/Errored` 14/14/0、`mhchem` true、`admonition` 2、`footnotes` 2、`tableOk` 1、`checkbox` 3）。
+
+产物侧：debug 包 16,911,849 B（+1,838,651 B）、**release 包 11,867,781 B**（Step 3 后 +593,295 B，压缩包增幅远小于 bundle 的 +1,922,140 B），构建日志零 WARNING，`apksigner verify -v` 仍 v1+v2+v3 = true / v4 = false；包内 `assets/mermaid/mermaid.min.js` = 5,494,801 B 且内嵌 `"12.2.0"`。单测 `178 tests completed, 11 failed`，与基线逐条一致。资产清单 153 文件 / **9,966,515 B**（Mermaid 现占 55%）。
 
 ### Step 6 · 明确不升的两个
 
@@ -223,6 +246,8 @@ python D:/workspace/js-libs/cdp_eval.py "$WS" 'JSON.stringify({katexVer:typeof k
 - 预览是**新起的 WebView 进程**，`/proc/net/unix` 里会有两个 `webview_devtools_remote_<pid>`。**别照 pid 大小猜**：把两个各 forward 到一个端口，`curl -s http://127.0.0.1:9223/json` 里**有 `type:"page"` 目标的那个才是预览**（另一个返回空数组）。预览页的 url/title 都显示 `about:blank`，所以只能靠"有没有 page 目标"分辨。
 - 点预览按钮的坐标别硬记：`uiautomator dump //sdcard/ui.xml` 之后 `tr '>' '\n' | grep action_preview | sed -n 's/.*bounds="\([^"]*\)".*/\1/p'` 取中心点（本机 1080×2400 上是 `[765,138][870,264]` → 817,201）。
 - **数学字体有没有真的换上，用 `CSS.getPlatformFontsForNode` 判定，别看截图猜**：`D:\workspace\js-libs\katex_font_probe.py` 走 DOM/CSS 域读真实绘字字体（`.mop`→`KaTeX_Size2`、`.mathnormal`→`KaTeX_Math`、对照 `p`→`Roboto` `isCustomFont=false`），并量同一段公式在 KaTeX 排版与 serif 回退下的宽度比。Step 3 就是这么确认的。
+- **Mermaid 的版本号读不到 DOM 上**，别把探针返回值当版本判据：`typeof mermaid !== "undefined"` 为真（全局在），但 `mermaid.version` 在 **v11.17.2 与 v12.2.0 上都是 undefined**（实测 `loaded-no-version`；写成 `(window.mermaid && window.mermaid.version) || "NOT-LOADED"` 就显示 `NOT-LOADED`）。和 `Prism.version` 同一类**探针定义错误**，不是产品问题。版本只能看 `assets/mermaid/version-info.txt` 与 bundle 内嵌串，或 `unzip -p <apk> assets/mermaid/mermaid.min.js | sha256sum` 对齐 tarball。
+- **跨大版本 A/B 要用 DOM 几何，别用截图像素差**：`D:\workspace\js-libs\mermaid_geom.py`（返回 `divs/processed/stillCodeBlocks` + SVG 的 `viewBox`、节点/边/`.edgeLabel`/`foreignObject` 计数）配合 `D:\workspace\js-libs\open_preview.sh`（启动文档→点预览→自动挑出带 `type:"page"` 的那个 socket 并 forward）。两个 APK 各跑一次同一表达式即可。**截图 diff 在这里会误导**：v12 的新样式（`[data-look="neo"]` 节点投影）本身就让裁剪区 83% 像素变化，看不出"内容有没有丢"。
 - `cdp_eval.py` 是零依赖的 stdlib WebSocket 客户端（`D:\workspace\js-libs\`），因为本机没有可用的 ws 库；表达式里只用双引号，整条用单引号包给 bash。
 - 数学探针前要先开 `pref_key__markdown_render_math`：`adb root` → 改 `/data/data/$P/shared_prefs/app.xml` 加 `<boolean name="pref_key__markdown_render_math" value="true" />` → `cp` 回去（cp 覆盖会保留原 owner，无需 chown）→ force-stop 生效。`run-as` 读不到 `/sdcard`，`adb push` 到 `/data/local/tmp` 会 `fchown failed`，这两条都试过不通。
 
