@@ -48,18 +48,26 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 - debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v163-2.16.1-flavorDefault-debug.apk`
   （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
   文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
-- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11525670 字节**（`af984cd4` 那次）
-  （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），
-  R8 minify 46s 完成，dex 从 debug 的 18 个合成 2 个；唯一 R8 告警是 flexmark 引用 `java.awt.*`（桌面端代码路径，可忽略）
+- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11521389 字节**（`57d789a6` 那次）
+  （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），R8 minify ~40s，
+  dex 从 debug 的 18 个合成 2 个；**构建日志已零 WARNING**——flexmark 桌面端类引用由 `app/proguard-rules.pro`
+  末尾 7 条精确 `-dontwarn`（java.awt / java.beans / javax.imageio / javax.lang.model / javax.swing /
+  org.apache.commons.{beanutils,collections}）消掉，原先是 45 行 `Missing class`
+- multidex：`androidx.multidex:multidex` 依赖已删（AGP 点名 minSdk≥21 不需要），`ApplicationObject` 相应改
+  `extends android.app.Application`；但 **`multiDexEnabled true` 保留**——它管"允许多 dex 产物"，与运行库无关，
+  实测删后 debug 仍 18 dex、release 仍 2 dex
 - 单元测试：`./gradlew testFlavorDefaultDebugUnitTest`
   基线：178 跑 / **11 失败**，全部在 `WikitextLinkResolverTests`（链接串里的 `:` 在 Windows 上是非法路径字符）
   与 `WikitextFileTests`（用例假定本机时区 ±1，本机 +8）。已在 HEAD 基线工作区实测，失败集合与升级后逐条一致，属既有环境失败，不是回归
 - R 常量（AGP 9）：`R.id.*` / `R.string.*` 是非 final 字段，**不能出现在 `case` 标签里**；全仓 20 处
   `switch`（含 `FormatRegistry` 那类 `static final int FORMAT_* = R.string.…` 间接别名）已改为 if/else-if 链。
   新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`。
-  上游当年靠 `gradle.properties` 里的 `android.nonFinalResIds=false`（commit `5de71d5e`）保住 final 常量，
-  **AGP 9.4 已废弃并忽略这个开关**（构建时打 `The option setting ... is deprecated`，实测 R.jar 仍是 non-final），
-  所以改 if/else 绕不过去，别去调这个开关
+  **AGP 生成两个 R.jar，别看错对象**：`intermediates/compile_r_class_jar/<variant>/generate<Variant>RFile/R.jar`
+  是 `public static int`（非 final，javac 读的就是它 ⇒ `case R.*` 编不过），而
+  `compile_and_runtime_not_namespaced_r_class_jar/<variant>/process<Variant>Resources/R.jar` 仍是
+  `public static final int`（打进 APK 的那份）。上游当年用 `android.nonFinalResIds=false`（commit `5de71d5e`）
+  保住 final，AGP 9.4 已废弃该开关且**实测无效**——删掉前后 compile R.jar 的 sha256 逐字节相同。
+  该开关本 fork 已从 `gradle.properties` 删除，别再去翻它找捷径
 - 日志读取坑：PowerShell `>` 重定向写出 UTF-16LE，先 `iconv -f UTF-16LE -t UTF-8` 再 grep
 - PowerShell 调用坑：bash 里包 `-Command` 参数用单引号，否则 `$env` 被 bash 吞掉
 
