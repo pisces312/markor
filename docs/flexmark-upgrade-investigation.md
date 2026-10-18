@@ -37,7 +37,7 @@
 - 工具链不动：Gradle 8.13（wrapper）+ AGP 8.13.2 + Kotlin 插件 1.3.72。
 - 验证：`assembleDebug` + 模拟器冒烟（标题/表格/任务列表/代码块/脚注）→ 提交推送。
 
-**第二轮（随后）：工具链升级**
+**第二轮（已完成，结果见 §0.7 + §0.9）：工具链升级**
 - 分支 `toolchain-upgrade`（基于 `flexmark-upgrade`）：Gradle wrapper 8.13 → **9.6.1**、AGP 8.13.2 → **9.4.0**（两者本机 `D:\dev\.gradle` 缓存已有，无需下载）。
 - 已知预期待摩擦点（以第一次构建报错为准）：
   - Kotlin 插件 1.3.72 与 Gradle 9 不兼容（Gradle 9 需要 Kotlin 插件 ≥ 2.x；`enable_plugin_kotlin` 若关闭则可能不触发）；
@@ -48,27 +48,29 @@
 
 ## 0.7 第二轮工具链升级结果（2026-10-18 实测）
 
-**结论：Gradle wrapper 8.13 → 9.5.1 落地；AGP 停在 8.13.2 —— AGP 9 和 Gradle 9.6 两头都进不来。**
+**结论（2026-10-18 当天两次更新，最终版）：Gradle wrapper 8.13 → 9.6.1、AGP 8.13.2 → 9.4.0 已落地。**
+中间一度认为 AGP 9 进不来而停在 8.13.2，原因是那 198 处 `switch (R.*)`；当天晚些时候按 §0.9 把它们改成 if/else-if 之后，AGP 9 编译通过。
 
-两条互相独立的硬阻塞，均已取到原始报错，不是推测：
+两条互相独立的硬约束，均已取到原始报错，不是推测：
 
 1. **Gradle 9.6 拒绝 AGP 8.x**。`Failed to apply plugin 'com.android.internal.application'` →
    `Plugin 'com.android.internal.application' relies on 'org.gradle.api.problems.internal.InternalProblems`,
    a Gradle internal API that was removed in Gradle 9.6.0. … or use Gradle 9.5.`
-   （Gradle 官方升级文档锚点 `upgrading_version_9.html#agp_8x_incompatible`）→ 原计划的 9.6.1 直接不可用，退回本机缓存里的 9.5.1。
+   （Gradle 官方升级文档锚点 `upgrading_version_9.html#agp_8x_incompatible`）
+   → 反过来也成立：**AGP 9.4 要求 Gradle ≥ 9.6.0**（`Minimum supported Gradle version is 9.6.0. Current version is 9.5.1.`）。
+   所以 AGP 8/9 与 Gradle 9.5/9.6 是一个不能交叉的 2×2：要么 8.13.2 + ≤9.5.x，要么 9.4.0 + ≥9.6.0。
 
-2. **AGP 9.4 编不过本仓库代码**。AGP 9 的新资源管线（`generate<Variant>RFile` → `compile_r_class_jar`）生成的 R 字段是
+2. **AGP 9 生成的 R 字段非 final**。新资源管线（`generate<Variant>RFile` → `compile_r_class_jar`）产出
    `public static int`（非 final），且 `android.nonFinalResIds=false` 已不再被采纳。
    javap 对照同一个字段 `R$string.abid_common_unordered_list_char`：AGP 8.13 的 R.jar 是 `public static final int`，AGP 9.4 是 `public static int`。
-   后果：所有 `switch (R.id/R.string.*)` 报「需要常量表达式」，实测 **198 处**，集中在
-   `format/ActionButtonBase.java`、`activity/DocumentEditAndViewFragment.java`、`format/*/​*ActionButtons.java` 等 10+ 文件。
+   后果：所有 `switch (R.id/R.string.*)` 报「需要常量表达式」，javac 首批报出 **198 处**、实际 **238 个 case 标签 / 20 个 switch / 15 个文件**。
    三个逃生门全部试过、全部无效：
    - `-Pandroid.enableAppCompileTimeRClass=true`（单独用、以及配 `nonTransitiveRClass=true`）→ 字段仍非 final；
      而 non-transitive 会额外让 `R.string.copy` 这类依赖库资源报「找不到符号」，属于反向代价；
    - `-Pandroid.enableNewResourceProcessing=false` → 插件 apply 直接失败（选项在 AGP 9 已移除）；
    - `-Pandroid.generateRJava=true` → 报「removed in version 4.1 of the Android Gradle plugin」。
 
-   唯一可行出路是把那 198 处 switch 改写成 if/else —— 上游代码风格级改动，fork 不做。等 gsantner 侧动手再说。
+   出路只有把 switch 改写成 if/else —— 见 §0.9，已实施。
 
 AGP 9 适配期间改的 4 处，AGP 8/9 通用，**已保留在 `toolchain-upgrade`**：
 
@@ -79,10 +81,12 @@ AGP 9 适配期间改的 4 处，AGP 8/9 通用，**已保留在 `toolchain-upgr
 | `build.gradle:43-47` 仓库顺序 | jitpack 提到 `maven.google.com` 之前 | 本机连 `maven.google.com` 是 connect timeout，Gradle 视为致命错误而非"未命中"，导致只在 jitpack 的 `com.github.*`（gene-rate / AppIntro）整体解析失败 |
 | `app/build.gradle` release `signingConfig` | 新增，显式 v1+v2+v3 | 见 §0.8 |
 
-撤回的 1 处：`getDefaultProguardFile('proguard-android.txt')` → `proguard-android-optimize.txt`。AGP 9 强制要求这个替换（旧文件含 `-dontoptimize`），但它会改变 release 的 R8 行为，既然 AGP 9 进不来，就恢复成与已验证基线一致的原值。**将来真上 AGP 9 时必须重新落地并复测 release 包。**
+撤回过又落地的 1 处：`getDefaultProguardFile('proguard-android.txt')` → `proguard-android-optimize.txt`。
+AGP 9 强制要求这个替换（旧文件含 `-dontoptimize`）。停在 8.13.2 期间曾撤回以对齐已验证基线，上 AGP 9 之后重新落地 —— 但 **release 包（R8 minify）尚未在 AGP 9 下复测**，见 §0.9 待办。
 
-**验证**：Gradle 9.5.1 + AGP 8.13.2 全量 `assembleFlavorDefaultDebug` 通过（编译 39s），装机 ACTION_VIEW 冒烟，
+**验证（AGP 8.13.2 阶段）**：Gradle 9.5.1 + AGP 8.13.2 全量 `assembleFlavorDefaultDebug` 通过（编译 39s），装机 ACTION_VIEW 冒烟，
 标题分隔线 / 表格（含右对齐列）/ 任务列表复选框 / Prism kotlin 高亮 / 引用 / 脚注上标+↩ 全部与第一轮一致，logcat 无 FATAL。
+AGP 9.4.0 阶段的验证见 §0.9。
 
 ## 0.8 release 三签（2026-10-18 实测）
 
@@ -91,6 +95,74 @@ AGP 9 适配期间改的 4 处，AGP 8/9 通用，**已保留在 `toolchain-upgr
 在 8.13 基线上单独构建 `assembleFlavorDefaultRelease` 验证（变量隔离，不与工具链混测）：
 apksigner（build-tools 37.0.0）报 v1/v2/v3 = true、v4 = false（只是没生成 .idsig，不影响校验），签名者 `CN=pisces312, O=pisces312`，
 R8 minify 同时通过（13m33s，产物 12.5MB）。
+
+**AGP 9.4.0 + Java 17 下复测（同日，§0.7 里"必须重新落地并复测 release 包"那条的收尾）**：`assembleFlavorDefaultRelease`
+46s 通过（这次 Gradle 缓存热，13m33s 那次含全量依赖解析，两者不可比），apksigner 仍 v1/v2/v3 = true、v4 = false，
+签名者 `CN=pisces312, O=pisces312`（cert SHA-256 `abadebd2fc9523628b5dacfa0fb40f652df0e161b71820c7a4b5a40653ee0b90`）。
+产物 **11525666 字节**，比 8.13 那次的 12.5MB 小 —— 但同时换了 AGP、语言级别和 proguard 基础规则文件（`proguard-android.txt`
+→ `proguard-android-optimize.txt`，见 §0.7），**没有做单变量对照，不能把这 1MB 归给其中任何一项**。
+R8 唯一告警是 flexmark 的 `ImageUtils` 引用 `java.awt.AlphaComposite` / `BufferedImage`（桌面端代码路径，Android 上不会走到）。
+装机验收：release 与 debug 签名不同 ⇒ 必须先 `uninstall`（笔记本在外部存储，卸载后 `smoke.md` 等文件仍在）；
+冷启动进程存活、logcat 无 FATAL/VerifyError/NoClassDefFound，引导页正常渲染；
+release 的 dex 只有 2 个（debug 是 18 个），逐个反汇编扫 `invoke-custom` / `invoke-polymorphic` 零命中 ⇒ R8 产物同样是 minSdk 21 可跑的。
+
+## 0.9 switch (R.*) → if/else-if（2026-10-18 实测）
+
+AGP 9 落地的唯一代码前置条件。范围：**15 个文件 / 20 个 switch / 238 个 case 标签**，全在 `app/src/main/java`，
+`app/src/test`、`app/src/androidTest` 与 `app/thirdparty` 里没有 R switch（已 grep 确认）。
+
+改写规则（保持语义，不做风格美化）：
+
+- 一组 `case A: case B:` 合并成 `if (x == A || x == B)`；单标签组条件过长（>120 列）才折行。
+- 分支体去掉只为结束 switch 而存在的 `break;`；`return` / `throw` 原样保留。
+- 剥掉 case 体上多余的 `{ }` 包装，缩进按原基准重算。
+- `default:` 一律变成链尾的 `else`；case 之间夹着的注释跟着它下面的标签走，不丢。
+- 唯一的 fallthrough 形状（`MarkdownActionButtons.onActionClick` 里 `case abid_common_open_link_browser` 不 return 直接落到 `default`）
+  保留原语义：该分支只 `if (followLinkUnderCursor()) return true;`，链尾统一 `return runCommonAction(action);`。
+- `FormatRegistry.getFormat` 是**间接别名**：`static final int FORMAT_* = R.string.action_format_*`，
+  标签本身不带 `R.`，但常量初始化不是编译期常量，AGP 9 下同样报「需要常量表达式」。它的 `default:` 写在
+  `case FORMAT_MARKDOWN:` 之前（两者共用一个分支体），改成链尾 `else` 后语义不变（含 `formatId = FORMAT_MARKDOWN` 的回写）。
+- 选择器不是单标识符的 3 处手写：`ActionButtonSettingsActivity.onOptionsItemSelected`、
+  `GsFileBrowserDialog.onClicked`、`GsFileBrowserListAdapter.onClicked`，先取 `final int id = …` 再比较。
+- `case android.R.id.home` 这类框架 R 仍是编译期常量，本来可以留在 switch 里；这 3 处一起改成 if 是为了同一方法内写法一致。
+
+做法：先写了一个"拒绝优先"的批量转换器（`D:\workspace\markor-switch2if.py`，未入库），只处理能静态判定安全的形状
+（选择器是标识符 + 标签全形如 `R.<type>.<name>` + 每个非末分支有终结语句 + default 在末尾），其余全部带行号报出来手工改；
+编译器当裁判，改到 `grep -rnE "case +R\\.|case +android\\.R" app/src/main/java` 为空。
+复核手段是 `git diff -w`（忽略缩进噪声后只剩结构变化），逐文件看过 20 个 switch 的分支归属与终结语句。
+
+**验证**：Gradle 9.6.1 + AGP 9.4.0 `assembleFlavorDefaultDebug` 通过（25s，产物 14993229 字节），装机启动无 FATAL、
+首屏引导页正常渲染。`testFlavorDefaultDebugUnitTest` 178 跑 / 11 失败，与 HEAD 基线工作区（Gradle 9.5.1 + AGP 8.13.2 + 未改 switch）
+的失败集合逐条一致 → 既有环境失败（Windows 路径非法字符、时区假定），非本次回归。
+
+**未做（下次装机必须覆盖）**：这 20 个 switch 全是点击/菜单分发，自动点击冒烟不在本 fork 的验证分工内，需要手过一遍——
+编辑器工具栏各格式按钮（markdown / asciidoc / orgmode / wikitext / todotxt 长按与短按）、溢出菜单（分享系列、格式切换系列、
+撤销重做、换行/行号/高亮开关）、文件浏览器对话框（根节点多选 / home / ok）、设置页按钮排序页。
+release 包已在 AGP 9 下构建并装机通过，见 §0.8 末尾。
+
+## 0.10 Java 语言级别 8 → 17（2026-10-18 实测）
+
+`app/build.gradle` `compileOptions` 的 `sourceCompatibility` / `targetCompatibility` 从 `VERSION_1_8` 改成 `VERSION_17`，
+**minSdk 保持 21**。顺手删掉根 `build.gradle` 里的 `version_minSdk = 17` —— 它在 `:app` 求值时被
+`app/build.gradle:16` 的 `rootProject.ext.version_minSdk = 21` 无条件覆盖，是个死值（全仓只有 3 处引用，单模块 `:app`）。
+
+抬语言级别与 §0.9 的 switch 改写**无关**：case 标签必须是常量表达式这条约束在 11/17 都没放宽，
+模式匹配 switch 要到 21 preview / 25 才落地，而那时也只能写成 `case int i when i == R.string.x ->`，等价于 if。
+
+真正的分界不是语言级别而是 **minSdk 决定的 API 可用性**：
+
+- 到 17 后立刻可用（纯语法或 javac 侧降级，产物仍是 minSdk 21 的 dex）：`var`、箭头 switch 表达式 + `yield`、文本块、
+  `instanceof` 模式、sealed。
+- **不可用**：Java 9+ 标准库 API（`List.of` / `Map.of` / `String.isBlank` / `Optional.isEmpty` / `Files.readString`）——
+  这跟 sourceCompatibility 无关，要么开 `coreLibraryDesugaring`（加依赖、加 dex 体积），要么抬 minSdk 到 24/26。
+- **别用 records**：`equals/hashCode/toString` 由 `invokedynamic ObjectMethods.bootstrap` 生成，minSdk 21 上 D8 无法降级。
+
+实测：`assembleFlavorDefaultDebug` 通过（12s），`javac/flavorDefaultDebug/.../FormatRegistry.class` 的 class major
+从 52 变成 **61**（=Java 17），确认语言级别真的生效而不是只改了配置文本；
+装机冷启动 pid 正常、logcat 无 `FATAL` / `VerifyError` / `NoClassDefFoundError`；
+`testFlavorDefaultDebugUnitTest` 178 跑 / 11 失败，失败集合与 §0.9 之后逐条一致（仍是那批 Windows 路径 + 时区用例）。
+另外逐 dex 反汇编扫过全部 18 个 `classes*.dex`，`invoke-custom` / `invoke-polymorphic`（两者都要 API 26+）命中数为 0
+—— 说明 javac 17 为字符串 `+` 生成的 invokedynamic 已被 D8 按 minSdk 21 降回 `StringBuilder`，dex 层面确实是 21 可跑的。
 
 ## 1. 当前状态（实测）
 
