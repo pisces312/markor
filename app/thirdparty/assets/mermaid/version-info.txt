@@ -1,2 +1,2 @@
-Current version: Mermaid v11.17.2
+Current version: Mermaid v12.2.0
 Download from: https://www.jsdelivr.com/package/npm/mermaid
