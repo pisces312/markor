@@ -64,10 +64,25 @@ android {
         main.assets.srcDirs += 'thirdparty/assets'
     }
 
+    signingConfigs {
+        release {
+            // Env-driven only: a missing variable leaves the config null so release packaging fails
+            // instead of silently shipping an unsigned or wrongly-keyed APK.
+            storeFile System.getenv('KEY_STORE') == null ? null : file(System.getenv('KEY_STORE'))
+            storePassword System.getenv('KEY_STORE_PASSWORD')
+            keyAlias System.getenv('KEY_ALIAS')
+            keyPassword System.getenv('KEY_PASSWORD')
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     packagingOptions {
