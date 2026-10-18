@@ -90,16 +90,13 @@ public class ActionButtonSettingsActivity extends MarkorBaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home: {
-                finish();
-                return true;
-            }
-
-            case R.id.action_reorder_reset: {
-                _adapter.reset();
-                return true;
-            }
+        final int id = item.getItemId();
+        if (id == android.R.id.home) {
+            finish();
+            return true;
+        } else if (id == R.id.action_reorder_reset) {
+            _adapter.reset();
+            return true;
         }
         return false;
     }

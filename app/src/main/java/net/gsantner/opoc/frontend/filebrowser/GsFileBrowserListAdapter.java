@@ -439,38 +439,35 @@ public class GsFileBrowserListAdapter extends RecyclerView.Adapter<GsFileBrowser
             GsContextUtils.blinkView(view);
         }
 
-        switch (view.getId()) {
-            case R.id.opoc_filesystem_item__root: {
-                // A own item was clicked
-                if (data.file != null) {
-                    if (areItemsSelected()) {
-                        // There are 1 or more items selected yet
-                        if (!toggleSelection(data) && data.file.isDirectory()) {
-                            loadFolder(data.file, null);
-                        }
-                    } else {
-                        // No pre-selection
-                        if (data.file.isDirectory() || _virtualMapping.containsKey(data.file)) {
-                            loadFolder(data.file, data.file.equals(_goUpFile) ? _currentFolder : null);
-                        } else if (data.file.isFile()) {
-                            _dopt.listener.onFsViewerSelected(_dopt.requestId, data.file, null);
-                        }
+        final int id = view.getId();
+        if (id == R.id.opoc_filesystem_item__root) {
+            // A own item was clicked
+            if (data.file != null) {
+                if (areItemsSelected()) {
+                    // There are 1 or more items selected yet
+                    if (!toggleSelection(data) && data.file.isDirectory()) {
+                        loadFolder(data.file, null);
+                    }
+                } else {
+                    // No pre-selection
+                    if (data.file.isDirectory() || _virtualMapping.containsKey(data.file)) {
+                        loadFolder(data.file, data.file.equals(_goUpFile) ? _currentFolder : null);
+                    } else if (data.file.isFile()) {
+                        _dopt.listener.onFsViewerSelected(_dopt.requestId, data.file, null);
                     }
                 }
-                return;
             }
-            case R.id.ui__filesystem_dialog__home: {
-                loadFolder(_dopt.rootFolder, _currentFolder);
-                return;
+            return;
+        } else if (id == R.id.ui__filesystem_dialog__home) {
+            loadFolder(_dopt.rootFolder, _currentFolder);
+            return;
+        } else if (id == R.id.ui__filesystem_dialog__button_ok) {
+            if (_dopt.doSelectMultiple && areItemsSelected()) {
+                _dopt.listener.onFsViewerMultiSelected(_dopt.requestId, _currentSelection.toArray(new File[0]));
+            } else {
+                _dopt.listener.onFsViewerSelected(_dopt.requestId, _currentFolder, null);
             }
-            case R.id.ui__filesystem_dialog__button_ok: {
-                if (_dopt.doSelectMultiple && areItemsSelected()) {
-                    _dopt.listener.onFsViewerMultiSelected(_dopt.requestId, _currentSelection.toArray(new File[0]));
-                } else {
-                    _dopt.listener.onFsViewerSelected(_dopt.requestId, _currentFolder, null);
-                }
-                return;
-            }
+            return;
         }
     }
 

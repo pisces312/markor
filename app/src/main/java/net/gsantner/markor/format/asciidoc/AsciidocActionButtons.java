@@ -86,160 +86,141 @@ public class AsciidocActionButtons extends ActionButtonBase {
 
     @Override
     public boolean onActionClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_asciidoc_h1: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
-                return true;
-            }
-            case R.string.abid_asciidoc_h2: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
-                return true;
-            }
-            case R.string.abid_asciidoc_h3: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
-                return true;
-            }
-            case R.string.abid_asciidoc_h4: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(4));
-                return true;
-            }
-            case R.string.abid_asciidoc_h5: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(5));
-                return true;
-            }
+        if (action == R.string.abid_asciidoc_h1) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
+            return true;
+        } else if (action == R.string.abid_asciidoc_h2) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
+            return true;
+        } else if (action == R.string.abid_asciidoc_h3) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
+            return true;
+        } else if (action == R.string.abid_asciidoc_h4) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(4));
+            return true;
+        } else if (action == R.string.abid_asciidoc_h5) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.setOrUnsetHeadingWithLevel(5));
+            return true;
+        } else if (action == R.string.abid_asciidoc_indent_level) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.indentLevel());
+            return true;
+        } else if (action == R.string.abid_asciidoc_deindent_level) {
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.deindentLevel());
+            return true;
+        }
 
-            case R.string.abid_asciidoc_indent_level: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.indentLevel());
-                return true;
-            }
-            case R.string.abid_asciidoc_deindent_level: {
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.deindentLevel());
-                return true;
-            }
+        // TODO: could be improved to keep level, will be done only on request to keep it simple for now
+        else if (action == R.string.abid_asciidoc_checkbox_list) {
+            final String listChar = "*";
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(
+                            listChar));
+            return true;
+        } else if (action == R.string.abid_asciidoc_unordered_list_char) {
+            final String listChar = "*";
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(
+                            listChar));
+            return true;
+        } else if (action == R.string.abid_asciidoc_ordered_list_char) {
+            final String listChar = ".";
+            runRegexReplaceAction(
+                    AsciidocReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix(
+                            listChar));
+            return true;
+        }
 
-            // TODO: could be improved to keep level, will be done only on request to keep it simple for now
-            case R.string.abid_asciidoc_checkbox_list: {
-                final String listChar = "*";
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(
-                                listChar));
-                return true;
-            }
-            case R.string.abid_asciidoc_unordered_list_char: {
-                final String listChar = "*";
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(
-                                listChar));
-                return true;
-            }
-            case R.string.abid_asciidoc_ordered_list_char: {
-                final String listChar = ".";
-                runRegexReplaceAction(
-                        AsciidocReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix(
-                                listChar));
-                return true;
-            }
+        // runAsciidocInlineAction works fine
+        else if (action == R.string.abid_asciidoc_squarebrackets) {
+            runAsciidocInlineAction("", "[", "]");
+            return true;
+        }
+        // https://docs.asciidoctor.org/asciidoc/latest/text/bold/
+        else if (action == R.string.abid_asciidoc_bold) {
+            runAsciidocInlineAction("**", "", "");
+            return true;
+        }
+        // __ vs _
+        // https://docs.asciidoctor.org/asciidoc/latest/text/italic/
+        // we use single and not double, because Markdown action buton also use single and
+        // runInlineAction is adapted for this
+        else if (action == R.string.abid_asciidoc_italic) {
+            runAsciidocInlineAction("_", "", "");
+            return true;
+        }
+        // https://docs.asciidoctor.org/asciidoc/latest/text/monospace/
+        // we use single and not double, because Markdown action buton also use single and
+        // runInlineAction is adapted for this
+        else if (action == R.string.abid_asciidoc_monospace) {
+            runAsciidocInlineAction("`", "", "");
+            return true;
+        }
+        // https://docs.asciidoctor.org/asciidoc/latest/text/highlight/
+        else if (action == R.string.abid_asciidoc_highlight) {
+            runAsciidocInlineAction("#", "", "");
+            return true;
+        }
 
-            // runAsciidocInlineAction works fine
-            case R.string.abid_asciidoc_squarebrackets: {
-                runAsciidocInlineAction("", "[", "]");
-                return true;
-            }
-            // https://docs.asciidoctor.org/asciidoc/latest/text/bold/
-            case R.string.abid_asciidoc_bold: {
-                runAsciidocInlineAction("**", "", "");
-                return true;
-            }
-            // __ vs _
-            // https://docs.asciidoctor.org/asciidoc/latest/text/italic/
-            // we use single and not double, because Markdown action buton also use single and
-            // runInlineAction is adapted for this
-            case R.string.abid_asciidoc_italic: {
-                runAsciidocInlineAction("_", "", "");
-                return true;
-            }
-            // https://docs.asciidoctor.org/asciidoc/latest/text/monospace/
-            // we use single and not double, because Markdown action buton also use single and
-            // runInlineAction is adapted for this
-            case R.string.abid_asciidoc_monospace: {
-                runAsciidocInlineAction("`", "", "");
-                return true;
-            }
-            // https://docs.asciidoctor.org/asciidoc/latest/text/highlight/
-            case R.string.abid_asciidoc_highlight: {
-                runAsciidocInlineAction("#", "", "");
-                return true;
-            }
+        // https://docs.asciidoctor.org/asciidoc/latest/text/text-span-built-in-roles/
+        // roles are like highlight, but with a prefix like: [.underline]#underline me#
+        else if (action == R.string.abid_asciidoc_underline) {
+            runAsciidocInlineAction("#", "[.underline]", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_overline) {
+            runAsciidocInlineAction("#", "[.overline]", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_linethrough) {
+            runAsciidocInlineAction("#", "[.line-through]", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_nobreak) {
+            runAsciidocInlineAction("#", "[.nobreak]", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_nowrap) {
+            runAsciidocInlineAction("#", "[.nowrap]", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_prewrap) {
+            runAsciidocInlineAction("#", "[.pre-wrap]", "");
+            return true;
+        }
 
-            // https://docs.asciidoctor.org/asciidoc/latest/text/text-span-built-in-roles/
-            // roles are like highlight, but with a prefix like: [.underline]#underline me#
-            case R.string.abid_asciidoc_underline: {
-                runAsciidocInlineAction("#", "[.underline]", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_overline: {
-                runAsciidocInlineAction("#", "[.overline]", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_linethrough: {
-                runAsciidocInlineAction("#", "[.line-through]", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_nobreak: {
-                runAsciidocInlineAction("#", "[.nobreak]", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_nowrap: {
-                runAsciidocInlineAction("#", "[.nowrap]", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_prewrap: {
-                runAsciidocInlineAction("#", "[.pre-wrap]", "");
-                return true;
-            }
+        // https://docs.asciidoctor.org/asciidoc/latest/text/subscript-and-superscript/
+        // ~ ^
+        else if (action == R.string.abid_asciidoc_subscript) {
+            runAsciidocInlineAction("~", "", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_superscript) {
+            runAsciidocInlineAction("^", "", "");
+            return true;
+        }
 
-            // https://docs.asciidoctor.org/asciidoc/latest/text/subscript-and-superscript/
-            // ~ ^
-            case R.string.abid_asciidoc_subscript: {
-                runAsciidocInlineAction("~", "", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_superscript: {
-                runAsciidocInlineAction("^", "", "");
-                return true;
-            }
+        // https://docs.asciidoctor.org/asciidoc/latest/blocks/breaks/#page-breaks
+        else if (action == R.string.abid_asciidoc_break_thematic) {
+            runAsciidocInlineAction("", "'''\n", "");
+            return true;
+        } else if (action == R.string.abid_asciidoc_break_page) {
+            runAsciidocInlineAction("", "<<<\n", "");
+            return true;
+        }
 
-            // https://docs.asciidoctor.org/asciidoc/latest/blocks/breaks/#page-breaks
-            case R.string.abid_asciidoc_break_thematic: {
-                runAsciidocInlineAction("", "'''\n", "");
-                return true;
-            }
-            case R.string.abid_asciidoc_break_page: {
-                runAsciidocInlineAction("", "<<<\n", "");
-                return true;
-            }
+        // https://docs.asciidoctor.org/asciidoc/latest/blocks/blockquotes/
+        else if (action == R.string.abid_asciidoc_block_quote) {
+            runAsciidocInlineAction("\n____\n", "", "");
+            return true;
+        }
 
-            // https://docs.asciidoctor.org/asciidoc/latest/blocks/blockquotes/
-            case R.string.abid_asciidoc_block_quote: {
-                runAsciidocInlineAction("\n____\n", "", "");
-                return true;
-            }
-
-            //this is an additional extra menu, analogous to special_key menu
-            case R.string.abid_asciidoc_special_key: {
-                runAsciidocSpecialKeyAction();
-                return true;
-            }
-            default: {
-                return runCommonAction(action);
-            }
+        //this is an additional extra menu, analogous to special_key menu
+        else if (action == R.string.abid_asciidoc_special_key) {
+            runAsciidocSpecialKeyAction();
+            return true;
+        } else {
+            return runCommonAction(action);
         }
 
     }

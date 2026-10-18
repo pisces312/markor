@@ -57,57 +57,44 @@ public class OrgmodeActionButtons extends ActionButtonBase {
 
     @Override
     public boolean onActionClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_orgmode_h1: {
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
-                return true;
-            }
-            case R.string.abid_orgmode_h2: {
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
-                return true;
-            }
-            case R.string.abid_orgmode_h3: {
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
-                return true;
-            }
-            case R.string.abid_common_unordered_list_char: {
-                final String listChar = _appSettings.getUnorderedListCharacter();
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(listChar));
-                return true;
-            }
-            case R.string.abid_common_checkbox_list: {
-                final String listChar = _appSettings.getUnorderedListCharacter();
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(listChar));
-                return true;
-            }
-            case R.string.abid_common_ordered_list_number: {
-                runRegexReplaceAction(OrgmodeReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_orgmode_bold: {
-                runSurroundAction("*");
-                return true;
-            }
-            case R.string.abid_orgmode_italic: {
-                runSurroundAction("/");
-                return true;
-            }
-            case R.string.abid_orgmode_strikeout: {
-                runSurroundAction("+");
-                return true;
-            }
-            case R.string.abid_orgmode_underline: {
-                runSurroundAction("_");
-                return true;
-            }
-            case R.string.abid_orgmode_code_inline: {
-                runSurroundAction("=");
-                return true;
-            }
-            default: {
-                return runCommonAction(action);
-            }
+        if (action == R.string.abid_orgmode_h1) {
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
+            return true;
+        } else if (action == R.string.abid_orgmode_h2) {
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
+            return true;
+        } else if (action == R.string.abid_orgmode_h3) {
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
+            return true;
+        } else if (action == R.string.abid_common_unordered_list_char) {
+            final String listChar = _appSettings.getUnorderedListCharacter();
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(listChar));
+            return true;
+        } else if (action == R.string.abid_common_checkbox_list) {
+            final String listChar = _appSettings.getUnorderedListCharacter();
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(listChar));
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_number) {
+            runRegexReplaceAction(OrgmodeReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_orgmode_bold) {
+            runSurroundAction("*");
+            return true;
+        } else if (action == R.string.abid_orgmode_italic) {
+            runSurroundAction("/");
+            return true;
+        } else if (action == R.string.abid_orgmode_strikeout) {
+            runSurroundAction("+");
+            return true;
+        } else if (action == R.string.abid_orgmode_underline) {
+            runSurroundAction("_");
+            return true;
+        } else if (action == R.string.abid_orgmode_code_inline) {
+            runSurroundAction("=");
+            return true;
+        } else {
+            return runCommonAction(action);
         }
     }
 

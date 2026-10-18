@@ -77,137 +77,121 @@ public class TodoTxtActionButtons extends ActionButtonBase {
     public boolean onActionClick(final @StringRes int action) {
         final List<TodoTxtTask> selTasks = TodoTxtTask.getSelectedTasks(_hlEditor);
 
-        switch (action) {
-            case R.string.abid_todotxt_toggle_done: {
-                final String doneMark = "x" + (_appSettings.isTodoAddCompletionDateEnabled() ? (" " + TodoTxtTask.getToday()) : "") + " ";
-                final String bodyWithPri = "(.*)(\\spri:([A-Z])(?=\\s|$))(.*)"; // +1 = pre, +2 = full tag, +3 = pri, +4 = post
-                final String doneWithDate = "^([Xx]\\s(?:" + TodoTxtTask.PT_DATE + "\\s)?)";
-                final String startingPriority = "^\\(([A-Z])\\)\\s";
-                runRegexReplaceAction(
-                        // If task not done and starts with a priority and contains a pri tag
-                        new ReplacePattern(startingPriority + bodyWithPri, doneMark + "$2 pri:$1$5"),
-                        // else if task not done and starts with a priority and does not contain a pri tag
-                        new ReplacePattern(startingPriority + "(.*)(\\s*)", doneMark + "$2 pri:$1"),
-                        // else if task is done and contains a pri tag
-                        new ReplacePattern(doneWithDate + bodyWithPri, "($4) $2$5"),
-                        // else if task is done and does not contain a pri tag
-                        new ReplacePattern(doneWithDate, ""),
-                        // else replace task start with 'x ...'
-                        new ReplacePattern("^", doneMark)
-                );
-                return true;
-            }
-            case R.string.abid_todotxt_add_context: {
-                addRemoveItems("@", R.string.insert_context, TodoTxtTask::getContexts);
-                return true;
-            }
-            case R.string.abid_todotxt_add_project: {
-                addRemoveItems("+", R.string.insert_project, TodoTxtTask::getProjects);
-                return true;
-            }
-            case R.string.abid_todotxt_priority: {
-                MarkorDialogFactory.showPriorityDialog(getActivity(), selTasks.get(0).getPriority(), (priority) -> {
-                    setPriority(priority.length() == 1 ? priority.charAt(0) : TodoTxtTask.PRIORITY_NONE);
-                });
-                return true;
-            }
-            case R.string.abid_todotxt_due_date: {
-                setDueDate(_appSettings.getDueDateOffset());
-                return true;
-            }
-            case R.string.abid_todotxt_archive_done_tasks: {
-                archiveDoneTasks();
-                return true;
-            }
-            case R.string.abid_todotxt_sort_todo: {
-                MarkorDialogFactory.showSttSortDialogue(getActivity(), (orderBy, descending) -> new Thread() {
-                    @Override
-                    public void run() {
-                        final List<TodoTxtTask> tasks = TodoTxtTask.getAllTasks(_hlEditor.getText());
-                        TodoTxtTask.sortTasks(tasks, orderBy, descending);
-                        setEditorTextAsync(TodoTxtTask.tasksToString(tasks));
-                        _appSettings.setStringList(LAST_SORT_ORDER_KEY, Arrays.asList(orderBy, Boolean.toString(descending)));
-                    }
-                }.start());
-                return true;
-            }
-            default: {
-                return runCommonAction(action);
-            }
+        if (action == R.string.abid_todotxt_toggle_done) {
+            final String doneMark = "x" + (_appSettings.isTodoAddCompletionDateEnabled() ? (" " + TodoTxtTask.getToday()) : "") + " ";
+            final String bodyWithPri = "(.*)(\\spri:([A-Z])(?=\\s|$))(.*)"; // +1 = pre, +2 = full tag, +3 = pri, +4 = post
+            final String doneWithDate = "^([Xx]\\s(?:" + TodoTxtTask.PT_DATE + "\\s)?)";
+            final String startingPriority = "^\\(([A-Z])\\)\\s";
+            runRegexReplaceAction(
+                    // If task not done and starts with a priority and contains a pri tag
+                    new ReplacePattern(startingPriority + bodyWithPri, doneMark + "$2 pri:$1$5"),
+                    // else if task not done and starts with a priority and does not contain a pri tag
+                    new ReplacePattern(startingPriority + "(.*)(\\s*)", doneMark + "$2 pri:$1"),
+                    // else if task is done and contains a pri tag
+                    new ReplacePattern(doneWithDate + bodyWithPri, "($4) $2$5"),
+                    // else if task is done and does not contain a pri tag
+                    new ReplacePattern(doneWithDate, ""),
+                    // else replace task start with 'x ...'
+                    new ReplacePattern("^", doneMark)
+            );
+            return true;
+        } else if (action == R.string.abid_todotxt_add_context) {
+            addRemoveItems("@", R.string.insert_context, TodoTxtTask::getContexts);
+            return true;
+        } else if (action == R.string.abid_todotxt_add_project) {
+            addRemoveItems("+", R.string.insert_project, TodoTxtTask::getProjects);
+            return true;
+        } else if (action == R.string.abid_todotxt_priority) {
+            MarkorDialogFactory.showPriorityDialog(getActivity(), selTasks.get(0).getPriority(), (priority) -> {
+                setPriority(priority.length() == 1 ? priority.charAt(0) : TodoTxtTask.PRIORITY_NONE);
+            });
+            return true;
+        } else if (action == R.string.abid_todotxt_due_date) {
+            setDueDate(_appSettings.getDueDateOffset());
+            return true;
+        } else if (action == R.string.abid_todotxt_archive_done_tasks) {
+            archiveDoneTasks();
+            return true;
+        } else if (action == R.string.abid_todotxt_sort_todo) {
+            MarkorDialogFactory.showSttSortDialogue(getActivity(), (orderBy, descending) -> new Thread() {
+                @Override
+                public void run() {
+                    final List<TodoTxtTask> tasks = TodoTxtTask.getAllTasks(_hlEditor.getText());
+                    TodoTxtTask.sortTasks(tasks, orderBy, descending);
+                    setEditorTextAsync(TodoTxtTask.tasksToString(tasks));
+                    _appSettings.setStringList(LAST_SORT_ORDER_KEY, Arrays.asList(orderBy, Boolean.toString(descending)));
+                }
+            }.start());
+            return true;
+        } else {
+            return runCommonAction(action);
         }
     }
 
     @Override
     public boolean onActionLongClick(final @StringRes int action) {
 
-        switch (action) {
-            case R.string.abid_todotxt_add_context: {
-                MarkorDialogFactory.showSttKeySearchDialog(getActivity(), _hlEditor, R.string.browse_by_context, true, true, TodoTxtFilter.TYPE.CONTEXT);
-                return true;
+        if (action == R.string.abid_todotxt_add_context) {
+            MarkorDialogFactory.showSttKeySearchDialog(getActivity(), _hlEditor, R.string.browse_by_context, true, true, TodoTxtFilter.TYPE.CONTEXT);
+            return true;
+        } else if (action == R.string.abid_todotxt_add_project) {
+            MarkorDialogFactory.showSttKeySearchDialog(getActivity(), _hlEditor, R.string.browse_by_project, true, true, TodoTxtFilter.TYPE.PROJECT);
+            return true;
+        } else if (action == R.string.abid_todotxt_sort_todo) {
+            final List<String> last = _appSettings.getStringList(LAST_SORT_ORDER_KEY);
+            if (last != null && last.size() == 2) {
+                final List<TodoTxtTask> tasks = TodoTxtTask.getAllTasks(_hlEditor.getText());
+                TodoTxtTask.sortTasks(tasks, last.get(0), Boolean.parseBoolean(last.get(1)));
+                setEditorTextAsync(TodoTxtTask.tasksToString(tasks));
             }
-            case R.string.abid_todotxt_add_project: {
-                MarkorDialogFactory.showSttKeySearchDialog(getActivity(), _hlEditor, R.string.browse_by_project, true, true, TodoTxtFilter.TYPE.PROJECT);
-                return true;
+            return true;
+        } else if (action == R.string.abid_todotxt_priority) {
+            final Editable text = _hlEditor.getText();
+            final int[] sel = TextViewUtils.getSelection(_hlEditor);
+            final int lineStart = TextViewUtils.getLineStart(text, sel[0]);
+            final int lineEnd = TextViewUtils.getLineEnd(text, sel[1]);
+            final List<TodoTxtTask> tasks = TodoTxtTask.getTasks(text, new int[]{sel[0], sel[1]});
+            char prevPriority = '\0', nextPriority = '\0';
+            boolean areAllSamePriority = true;
+            if (lineStart != 0) {
+                final int prevLineStart = TextViewUtils.getLineStart(text, lineStart - 1);
+                final int prevLineEnd = TextViewUtils.getLineEnd(text, prevLineStart);
+                final String prevLine = text.subSequence(prevLineStart, prevLineEnd).toString();
+                prevPriority = new TodoTxtTask(prevLine).getPriority();
             }
-            case R.string.abid_todotxt_sort_todo: {
-                final List<String> last = _appSettings.getStringList(LAST_SORT_ORDER_KEY);
-                if (last != null && last.size() == 2) {
-                    final List<TodoTxtTask> tasks = TodoTxtTask.getAllTasks(_hlEditor.getText());
-                    TodoTxtTask.sortTasks(tasks, last.get(0), Boolean.parseBoolean(last.get(1)));
-                    setEditorTextAsync(TodoTxtTask.tasksToString(tasks));
-                }
-                return true;
+            if (lineEnd != text.length()) {
+                final int nextLineStart = TextViewUtils.getLineStart(text, lineEnd + 1);
+                final int nextLineEnd = TextViewUtils.getLineEnd(text, nextLineStart);
+                final String nextLine = text.subSequence(nextLineStart, nextLineEnd).toString();
+                nextPriority = new TodoTxtTask(nextLine).getPriority();
             }
-            case R.string.abid_todotxt_priority: {
-                final Editable text = _hlEditor.getText();
-                final int[] sel = TextViewUtils.getSelection(_hlEditor);
-                final int lineStart = TextViewUtils.getLineStart(text, sel[0]);
-                final int lineEnd = TextViewUtils.getLineEnd(text, sel[1]);
-                final List<TodoTxtTask> tasks = TodoTxtTask.getTasks(text, new int[]{sel[0], sel[1]});
-                char prevPriority = '\0', nextPriority = '\0';
-                boolean areAllSamePriority = true;
-                if (lineStart != 0) {
-                    final int prevLineStart = TextViewUtils.getLineStart(text, lineStart - 1);
-                    final int prevLineEnd = TextViewUtils.getLineEnd(text, prevLineStart);
-                    final String prevLine = text.subSequence(prevLineStart, prevLineEnd).toString();
-                    prevPriority = new TodoTxtTask(prevLine).getPriority();
+            for (TodoTxtTask task : tasks) {
+                if (task.getPriority() != tasks.get(0).getPriority()) {
+                    areAllSamePriority = false;
+                    break;
                 }
-                if (lineEnd != text.length()) {
-                    final int nextLineStart = TextViewUtils.getLineStart(text, lineEnd + 1);
-                    final int nextLineEnd = TextViewUtils.getLineEnd(text, nextLineStart);
-                    final String nextLine = text.subSequence(nextLineStart, nextLineEnd).toString();
-                    nextPriority = new TodoTxtTask(nextLine).getPriority();
-                }
-                for (TodoTxtTask task : tasks) {
-                    if (task.getPriority() != tasks.get(0).getPriority()) {
-                        areAllSamePriority = false;
-                        break;
-                    }
-                }
-                if (areAllSamePriority) {
-                    if (prevPriority != tasks.get(0).getPriority() && prevPriority != '\0') {
-                        setPriority(prevPriority);
-                    } else if (nextPriority != tasks.get(tasks.size() - 1).getPriority() && nextPriority != '\0') {
-                        setPriority(nextPriority);
-                    } else {
-                        setPriority(TodoTxtTask.PRIORITY_NONE);
-                    }
+            }
+            if (areAllSamePriority) {
+                if (prevPriority != tasks.get(0).getPriority() && prevPriority != '\0') {
+                    setPriority(prevPriority);
+                } else if (nextPriority != tasks.get(tasks.size() - 1).getPriority() && nextPriority != '\0') {
+                    setPriority(nextPriority);
                 } else {
-                    if (prevPriority != '\0') {
-                        setPriority(prevPriority);
-                    } else {
-                        setPriority(tasks.get(0).getPriority());
-                    }
+                    setPriority(TodoTxtTask.PRIORITY_NONE);
                 }
-                return true;
+            } else {
+                if (prevPriority != '\0') {
+                    setPriority(prevPriority);
+                } else {
+                    setPriority(tasks.get(0).getPriority());
+                }
             }
-            case R.string.abid_todotxt_due_date: {
-                setDate();
-                return true;
-            }
-            default: {
-                return runCommonLongPressAction(action);
-            }
+            return true;
+        } else if (action == R.string.abid_todotxt_due_date) {
+            setDate();
+            return true;
+        } else {
+            return runCommonLongPressAction(action);
         }
     }
 

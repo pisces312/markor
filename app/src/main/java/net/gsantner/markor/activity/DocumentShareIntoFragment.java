@@ -557,51 +557,34 @@ public class DocumentShareIntoFragment extends MarkorBaseFragment {
             String tmps;
 
             boolean close = false;
-            switch (keyId) {
-                case R.string.pref_key__share_into__clipboard: {
-                    shu.setClipboard(getContext(), text);
+            if (keyId == R.string.pref_key__share_into__clipboard) {
+                shu.setClipboard(getContext(), text);
+                close = true;
+            } else if (keyId == R.string.pref_key__select_create_document) {
+                selectOrCreateDestination(null);
+                return true;
+            } else if (keyId == R.string.pref_key__search_for_target) {
+                searchForTarget();
+                return true;
+            } else if (keyId == R.string.pref_key__share_into__quicknote) {
+                attachOrCopyAndClose(_appSettings.getQuickNoteFile(), false);
+            } else if (keyId == R.string.pref_key__share_into__todo) {
+                attachOrCopyAndClose(_appSettings.getTodoFile(), false);
+            } else if (keyId == R.string.pref_key__share_into__most_recent_document) {
+                attachOrCopyAndClose(mostRecentFile, false);
+            } else if (keyId == R.string.pref_key__share_into__open_in_browser) {
+                if ((tmps = GsTextUtils.tryExtractUrlAroundPos(text, text.length())) != null) {
+                    _cu.openWebpageInExternalBrowser(getActivity(), tmps);
                     close = true;
-                    break;
                 }
-                case R.string.pref_key__select_create_document: {
-                    selectOrCreateDestination(null);
-                    return true;
-                }
-                case R.string.pref_key__search_for_target: {
-                    searchForTarget();
-                    return true;
-                }
-                case R.string.pref_key__share_into__quicknote: {
-                    attachOrCopyAndClose(_appSettings.getQuickNoteFile(), false);
-                    break;
-                }
-                case R.string.pref_key__share_into__todo: {
-                    attachOrCopyAndClose(_appSettings.getTodoFile(), false);
-                    break;
-                }
-                case R.string.pref_key__share_into__most_recent_document: {
-                    attachOrCopyAndClose(mostRecentFile, false);
-                    break;
-                }
-                case R.string.pref_key__share_into__open_in_browser: {
-                    if ((tmps = GsTextUtils.tryExtractUrlAroundPos(text, text.length())) != null) {
-                        _cu.openWebpageInExternalBrowser(getActivity(), tmps);
-                        close = true;
-                    }
-                    break;
-                }
-                case R.string.pref_key__share_into__reshare: {
-                    shu.shareText(getActivity(), text, null);
+            } else if (keyId == R.string.pref_key__share_into__reshare) {
+                shu.shareText(getActivity(), text, null);
+                close = true;
+            } else if (keyId == R.string.pref_key__share_into__calendar_event) {
+                if (shu.createCalendarAppointment(getActivity(), null, text, null)) {
                     close = true;
-                    break;
-                }
-                case R.string.pref_key__share_into__calendar_event: {
-                    if (shu.createCalendarAppointment(getActivity(), null, text, null)) {
-                        close = true;
-                    } else {
-                        Toast.makeText(getContext(), R.string.no_calendar_app_is_installed, Toast.LENGTH_SHORT).show();
-                    }
-                    break;
+                } else {
+                    Toast.makeText(getContext(), R.string.no_calendar_app_is_installed, Toast.LENGTH_SHORT).show();
                 }
             }
 

@@ -91,71 +91,54 @@ public class MarkdownActionButtons extends ActionButtonBase {
     @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onActionClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_markdown_quote: {
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.toggleQuote());
+        if (action == R.string.abid_markdown_quote) {
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.toggleQuote());
+            return true;
+        } else if (action == R.string.abid_markdown_h1) {
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
+            return true;
+        } else if (action == R.string.abid_markdown_h2) {
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
+            return true;
+        } else if (action == R.string.abid_markdown_h3) {
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
+            return true;
+        } else if (action == R.string.abid_common_unordered_list_char) {
+            final String listChar = _appSettings.getUnorderedListCharacter();
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(listChar));
+            return true;
+        } else if (action == R.string.abid_common_checkbox_list) {
+            final String listChar = _appSettings.getUnorderedListCharacter();
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(listChar));
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_number) {
+            runRegexReplaceAction(MarkdownReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_markdown_bold) {
+            runSurroundAction("**");
+            return true;
+        } else if (action == R.string.abid_markdown_italic) {
+            runSurroundAction("_");
+            return true;
+        } else if (action == R.string.abid_markdown_strikeout) {
+            runSurroundAction("~~");
+            return true;
+        } else if (action == R.string.abid_markdown_code_inline) {
+            runSurroundAction("`");
+            return true;
+        } else if (action == R.string.abid_markdown_horizontal_line) {
+            _hlEditor.insertOrReplaceTextOnCursor("----\n");
+            return true;
+        } else if (action == R.string.abid_markdown_table_insert_columns) {
+            MarkorDialogFactory.showInsertTableRowDialog(getActivity(), false, this::insertTableRow);
+            return true;
+        } else if (action == R.string.abid_common_open_link_browser) {
+            if (followLinkUnderCursor()) {
                 return true;
-            }
-            case R.string.abid_markdown_h1: {
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(1));
-                return true;
-            }
-            case R.string.abid_markdown_h2: {
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(2));
-                return true;
-            }
-            case R.string.abid_markdown_h3: {
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.setOrUnsetHeadingWithLevel(3));
-                return true;
-            }
-            case R.string.abid_common_unordered_list_char: {
-                final String listChar = _appSettings.getUnorderedListCharacter();
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix(listChar));
-                return true;
-            }
-            case R.string.abid_common_checkbox_list: {
-                final String listChar = _appSettings.getUnorderedListCharacter();
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.toggleToCheckedOrUncheckedListPrefix(listChar));
-                return true;
-            }
-            case R.string.abid_common_ordered_list_number: {
-                runRegexReplaceAction(MarkdownReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_markdown_bold: {
-                runSurroundAction("**");
-                return true;
-            }
-            case R.string.abid_markdown_italic: {
-                runSurroundAction("_");
-                return true;
-            }
-            case R.string.abid_markdown_strikeout: {
-                runSurroundAction("~~");
-                return true;
-            }
-            case R.string.abid_markdown_code_inline: {
-                runSurroundAction("`");
-                return true;
-            }
-            case R.string.abid_markdown_horizontal_line: {
-                _hlEditor.insertOrReplaceTextOnCursor("----\n");
-                return true;
-            }
-            case R.string.abid_markdown_table_insert_columns: {
-                MarkorDialogFactory.showInsertTableRowDialog(getActivity(), false, this::insertTableRow);
-                return true;
-            }
-            case R.string.abid_common_open_link_browser: {
-                if (followLinkUnderCursor()) {
-                    return true;
-                }
-            }
-            default: {
-                return runCommonAction(action);
             }
         }
+        return runCommonAction(action);
     }
 
     /**
@@ -208,36 +191,28 @@ public class MarkdownActionButtons extends ActionButtonBase {
     @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onActionLongClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_markdown_table_insert_columns: {
-                MarkorDialogFactory.showInsertTableRowDialog(getActivity(), true, this::insertTableRow);
-                return true;
-            }
-            case R.string.abid_markdown_code_inline: {
-                _hlEditor.withAutoFormatDisabled(() -> surroundBlock(_hlEditor.getText(), "```"));
-                return true;
-            }
-            case R.string.abid_markdown_bold: {
-                runLineSurroundAction(LINE_BOLD, "**");
-                return true;
-            }
-            case R.string.abid_markdown_italic: {
-                runLineSurroundAction(LINE_ITALIC, "_");
-                return true;
-            }
-            case R.string.abid_markdown_strikeout: {
-                runLineSurroundAction(LINE_STRIKEOUT, "~~");
-                return true;
-            }
-            case R.string.abid_common_checkbox_list: {
-                MarkorDialogFactory.showDocumentChecklistDialog(
-                        getActivity(), _hlEditor.getText(), CHECKED_LIST_LINE, 4, "xX", " ",
-                        pos -> TextViewUtils.setSelectionAndShow(_hlEditor, pos));
-                return true;
-            }
-            default: {
-                return runCommonLongPressAction(action);
-            }
+        if (action == R.string.abid_markdown_table_insert_columns) {
+            MarkorDialogFactory.showInsertTableRowDialog(getActivity(), true, this::insertTableRow);
+            return true;
+        } else if (action == R.string.abid_markdown_code_inline) {
+            _hlEditor.withAutoFormatDisabled(() -> surroundBlock(_hlEditor.getText(), "```"));
+            return true;
+        } else if (action == R.string.abid_markdown_bold) {
+            runLineSurroundAction(LINE_BOLD, "**");
+            return true;
+        } else if (action == R.string.abid_markdown_italic) {
+            runLineSurroundAction(LINE_ITALIC, "_");
+            return true;
+        } else if (action == R.string.abid_markdown_strikeout) {
+            runLineSurroundAction(LINE_STRIKEOUT, "~~");
+            return true;
+        } else if (action == R.string.abid_common_checkbox_list) {
+            MarkorDialogFactory.showDocumentChecklistDialog(
+                    getActivity(), _hlEditor.getText(), CHECKED_LIST_LINE, 4, "xX", " ",
+                    pos -> TextViewUtils.setSelectionAndShow(_hlEditor, pos));
+            return true;
+        } else {
+            return runCommonLongPressAction(action);
         }
     }
 

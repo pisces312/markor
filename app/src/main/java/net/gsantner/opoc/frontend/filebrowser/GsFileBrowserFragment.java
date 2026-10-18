@@ -377,104 +377,87 @@ public class GsFileBrowserFragment extends GsFragmentBase<GsSharedPreferencesPro
         final int _id = item.getItemId();
         final Set<File> currentSelection = _filesystemViewerAdapter.getCurrentSelection();
 
-        switch (_id) {
-            case R.id.action_create_shortcut: {
-                final File sel = currentSelection.iterator().next();
-                final File file = _filesystemViewerAdapter.resolveVirtualFile(sel);
-                final String title = GsFileUtils.getFilenameWithoutExtension(sel);
-                _cu.createLauncherDesktopShortcut(getContext(), file, title);
-                return true;
+        if (_id == R.id.action_create_shortcut) {
+            final File sel = currentSelection.iterator().next();
+            final File file = _filesystemViewerAdapter.resolveVirtualFile(sel);
+            final String title = GsFileUtils.getFilenameWithoutExtension(sel);
+            _cu.createLauncherDesktopShortcut(getContext(), file, title);
+            return true;
+        } else if (_id == R.id.action_sort) {
+            updateSortSettings();
+            return true;
+        } else if (_id == R.id.action_import) {
+            showImportDialog();
+            return true;
+        } else if (_id == R.id.action_search) {
+            executeSearchAction();
+            return true;
+        } else if (_id == R.id.action_go_to) {
+            final File folder = new File("/storage");
+            _filesystemViewerAdapter.setCurrentFolder(folder);
+            return true;
+        } else if (_id == R.id.action_favourite) {
+            if (_filesystemViewerAdapter.areItemsSelected()) {
+                _dopt.favouriteFiles = GsCollectionUtils.union(_dopt.favouriteFiles, currentSelection);
+                _appSettings.setFavouriteFiles(_dopt.favouriteFiles);
+                updateMenuItems();
             }
-            case R.id.action_sort: {
-                updateSortSettings();
-                return true;
+            return true;
+        } else if (_id == R.id.action_favourite_remove) {
+            if (_filesystemViewerAdapter.areItemsSelected()) {
+                _dopt.favouriteFiles = GsCollectionUtils.setDiff(_dopt.favouriteFiles, currentSelection);
+                _appSettings.setFavouriteFiles(_dopt.favouriteFiles);
+                updateMenuItems();
             }
-            case R.id.action_import: {
-                showImportDialog();
-                return true;
+            return true;
+        } else if (_id == R.id.action_delete_selected_items) {
+            MarkorDialogFactory.showConfirmDialog(
+                    getActivity(),
+                    R.string.confirm_delete,
+                    null,
+                    GsCollectionUtils.map(_filesystemViewerAdapter.getCurrentSelection(), File::getName),
+                    () -> new Thread(() -> {
+                        WrMarkorSingleton.getInstance().deleteSelectedItems(currentSelection, getContext());
+                        _recyclerList.post(() -> _filesystemViewerAdapter.reloadCurrentFolder());
+                    }).start()
+            );
+            return true;
+        } else if (_id == R.id.action_move_selected_items || _id == R.id.action_copy_selected_items) {
+            askForMoveOrCopy(_id == R.id.action_move_selected_items);
+            return true;
+        } else if (_id == R.id.action_check_all) {
+            _filesystemViewerAdapter.selectAll();
+            return true;
+        } else if (_id == R.id.action_clear_selection) {
+            _filesystemViewerAdapter.unselectAll();
+            return true;
+        } else if (_id == R.id.action_share_files) {
+            MarkorContextUtils s = new MarkorContextUtils(getContext());
+            s.shareStreamMultiple(getContext(), currentSelection, "*/*");
+            _filesystemViewerAdapter.reloadCurrentFolder();
+            return true;
+        } else if (_id == R.id.action_info_selected_item) {
+            if (_filesystemViewerAdapter.areItemsSelected()) {
+                File file = new ArrayList<>(currentSelection).get(0);
+                FileInfoDialog.show(file, getChildFragmentManager());
             }
-            case R.id.action_search: {
-                executeSearchAction();
-                return true;
+            return true;
+        } else if (_id == R.id.action_rename_selected_item) {
+            if (_filesystemViewerAdapter.areItemsSelected()) {
+                final File file = currentSelection.iterator().next();
+                final WrRenameDialog renameDialog = WrRenameDialog.newInstance(file, renamedFile -> reloadCurrentFolder());
+                renameDialog.show(getChildFragmentManager(), WrRenameDialog.FRAGMENT_TAG);
             }
-            case R.id.action_go_to: {
-                final File folder = new File("/storage");
-                _filesystemViewerAdapter.setCurrentFolder(folder);
-                return true;
-            }
-            case R.id.action_favourite: {
-                if (_filesystemViewerAdapter.areItemsSelected()) {
-                    _dopt.favouriteFiles = GsCollectionUtils.union(_dopt.favouriteFiles, currentSelection);
-                    _appSettings.setFavouriteFiles(_dopt.favouriteFiles);
-                    updateMenuItems();
+            return true;
+        } else if (_id == R.id.action_fs_copy_to_clipboard) {
+            if (_filesystemViewerAdapter.areItemsSelected()) {
+                final File file = new ArrayList<>(currentSelection).get(0);
+                if (FormatRegistry.isFileSupported(file, true)) {
+                    _cu.setClipboard(getContext(), GsFileUtils.readTextFileFast(file).first);
+                    Toast.makeText(getContext(), R.string.clipboard, Toast.LENGTH_SHORT).show();
                 }
-                return true;
             }
-            case R.id.action_favourite_remove: {
-                if (_filesystemViewerAdapter.areItemsSelected()) {
-                    _dopt.favouriteFiles = GsCollectionUtils.setDiff(_dopt.favouriteFiles, currentSelection);
-                    _appSettings.setFavouriteFiles(_dopt.favouriteFiles);
-                    updateMenuItems();
-                }
-                return true;
-            }
-            case R.id.action_delete_selected_items: {
-                MarkorDialogFactory.showConfirmDialog(
-                        getActivity(),
-                        R.string.confirm_delete,
-                        null,
-                        GsCollectionUtils.map(_filesystemViewerAdapter.getCurrentSelection(), File::getName),
-                        () -> new Thread(() -> {
-                            WrMarkorSingleton.getInstance().deleteSelectedItems(currentSelection, getContext());
-                            _recyclerList.post(() -> _filesystemViewerAdapter.reloadCurrentFolder());
-                        }).start()
-                );
-                return true;
-            }
-            case R.id.action_move_selected_items:
-            case R.id.action_copy_selected_items: {
-                askForMoveOrCopy(_id == R.id.action_move_selected_items);
-                return true;
-            }
-            case R.id.action_check_all: {
-                _filesystemViewerAdapter.selectAll();
-                return true;
-            }
-            case R.id.action_clear_selection: {
-                _filesystemViewerAdapter.unselectAll();
-                return true;
-            }
-            case R.id.action_share_files: {
-                MarkorContextUtils s = new MarkorContextUtils(getContext());
-                s.shareStreamMultiple(getContext(), currentSelection, "*/*");
-                _filesystemViewerAdapter.reloadCurrentFolder();
-                return true;
-            }
-            case R.id.action_info_selected_item: {
-                if (_filesystemViewerAdapter.areItemsSelected()) {
-                    File file = new ArrayList<>(currentSelection).get(0);
-                    FileInfoDialog.show(file, getChildFragmentManager());
-                }
-                return true;
-            }
-            case R.id.action_rename_selected_item: {
-                if (_filesystemViewerAdapter.areItemsSelected()) {
-                    final File file = currentSelection.iterator().next();
-                    final WrRenameDialog renameDialog = WrRenameDialog.newInstance(file, renamedFile -> reloadCurrentFolder());
-                    renameDialog.show(getChildFragmentManager(), WrRenameDialog.FRAGMENT_TAG);
-                }
-                return true;
-            }
-            case R.id.action_fs_copy_to_clipboard: {
-                if (_filesystemViewerAdapter.areItemsSelected()) {
-                    final File file = new ArrayList<>(currentSelection).get(0);
-                    if (FormatRegistry.isFileSupported(file, true)) {
-                        _cu.setClipboard(getContext(), GsFileUtils.readTextFileFast(file).first);
-                        Toast.makeText(getContext(), R.string.clipboard, Toast.LENGTH_SHORT).show();
-                    }
-                }
-                return true;
-            }
+            return true;
         }
 
         return false;

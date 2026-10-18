@@ -129,79 +129,59 @@ public class FormatRegistry {
         final FormatRegistry format = new FormatRegistry();
         final AppSettings appSettings = AppSettings.get(context);
 
-        switch (formatId) {
-            case FORMAT_CSV: {
-                format._converter = CONVERTER_CSV;
-                format._highlighter = new CsvSyntaxHighlighter(appSettings);
+        if (formatId == FORMAT_CSV) {
+            format._converter = CONVERTER_CSV;
+            format._highlighter = new CsvSyntaxHighlighter(appSettings);
 
-                // TODO k3b ????
-                format._textActions = new PlaintextActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
-                break;
-            }
-            case FORMAT_PLAIN: {
-                format._converter = CONVERTER_PLAINTEXT;
-                format._highlighter = new PlaintextSyntaxHighlighter(appSettings, document.extension);
-                // Should implement code action buttons for PlaintextActionButtons
-                format._textActions = new PlaintextActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
-                break;
-            }
-            case FORMAT_ASCIIDOC: {
-                format._converter = CONVERTER_ASCIIDOC;
-                format._highlighter = new AsciidocSyntaxHighlighter(appSettings);
-                format._textActions = new AsciidocActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
-                break;
-            }
-            case FORMAT_TODOTXT: {
-                format._converter = CONVERTER_TODOTXT;
-                format._highlighter = new TodoTxtSyntaxHighlighter(appSettings);
-                format._textActions = new TodoTxtActionButtons(context, document);
-                format._autoFormatInputFilter = new TodoTxtAutoTextFormatter();
-                break;
-            }
-            case FORMAT_KEYVALUE: {
-                format._converter = CONVERTER_KEYVALUE;
-                format._highlighter = new KeyValueSyntaxHighlighter(appSettings);
-                format._textActions = new PlaintextActionButtons(context, document);
-                break;
-            }
-            case FORMAT_WIKITEXT: {
-                format._converter = CONVERTER_WIKITEXT;
-                format._highlighter = new WikitextSyntaxHighlighter(appSettings);
-                format._textActions = new WikitextActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(WikitextReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(WikitextReplacePatternGenerator.formatPatterns);
-                break;
-            }
-            case FORMAT_EMBEDBINARY: {
-                format._converter = CONVERTER_EMBEDBINARY;
-                format._highlighter = new PlaintextSyntaxHighlighter(appSettings);
-                format._textActions = new PlaintextActionButtons(context, document);
-                break;
-            }
-            case FORMAT_ORGMODE: {
-                format._converter = CONVERTER_ORGMODE;
-                format._highlighter = new OrgmodeSyntaxHighlighter(appSettings);
-                format._textActions = new OrgmodeActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(OrgmodeReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(OrgmodeReplacePatternGenerator.formatPatterns);
-                break;
-            }
-            default:
-            case FORMAT_MARKDOWN: {
-                formatId = FORMAT_MARKDOWN;
-                format._converter = CONVERTER_MARKDOWN;
-                format._highlighter = new MarkdownSyntaxHighlighter(appSettings);
-                format._textActions = new MarkdownActionButtons(context, document);
-                format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
-                format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
-                break;
-            }
+            // TODO k3b ????
+            format._textActions = new PlaintextActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
+        } else if (formatId == FORMAT_PLAIN) {
+            format._converter = CONVERTER_PLAINTEXT;
+            format._highlighter = new PlaintextSyntaxHighlighter(appSettings, document.extension);
+            // Should implement code action buttons for PlaintextActionButtons
+            format._textActions = new PlaintextActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
+        } else if (formatId == FORMAT_ASCIIDOC) {
+            format._converter = CONVERTER_ASCIIDOC;
+            format._highlighter = new AsciidocSyntaxHighlighter(appSettings);
+            format._textActions = new AsciidocActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
+        } else if (formatId == FORMAT_TODOTXT) {
+            format._converter = CONVERTER_TODOTXT;
+            format._highlighter = new TodoTxtSyntaxHighlighter(appSettings);
+            format._textActions = new TodoTxtActionButtons(context, document);
+            format._autoFormatInputFilter = new TodoTxtAutoTextFormatter();
+        } else if (formatId == FORMAT_KEYVALUE) {
+            format._converter = CONVERTER_KEYVALUE;
+            format._highlighter = new KeyValueSyntaxHighlighter(appSettings);
+            format._textActions = new PlaintextActionButtons(context, document);
+        } else if (formatId == FORMAT_WIKITEXT) {
+            format._converter = CONVERTER_WIKITEXT;
+            format._highlighter = new WikitextSyntaxHighlighter(appSettings);
+            format._textActions = new WikitextActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(WikitextReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(WikitextReplacePatternGenerator.formatPatterns);
+        } else if (formatId == FORMAT_EMBEDBINARY) {
+            format._converter = CONVERTER_EMBEDBINARY;
+            format._highlighter = new PlaintextSyntaxHighlighter(appSettings);
+            format._textActions = new PlaintextActionButtons(context, document);
+        } else if (formatId == FORMAT_ORGMODE) {
+            format._converter = CONVERTER_ORGMODE;
+            format._highlighter = new OrgmodeSyntaxHighlighter(appSettings);
+            format._textActions = new OrgmodeActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(OrgmodeReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(OrgmodeReplacePatternGenerator.formatPatterns);
+        } else {
+            formatId = FORMAT_MARKDOWN;
+            format._converter = CONVERTER_MARKDOWN;
+            format._highlighter = new MarkdownSyntaxHighlighter(appSettings);
+            format._textActions = new MarkdownActionButtons(context, document);
+            format._autoFormatInputFilter = new AutoTextFormatter(MarkdownReplacePatternGenerator.formatPatterns);
+            format._autoFormatTextWatcher = new ListHandler(MarkdownReplacePatternGenerator.formatPatterns);
         }
         format._formatId = formatId;
         return format;

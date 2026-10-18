@@ -794,147 +794,122 @@ public abstract class ActionButtonBase {
     @SuppressLint("NonConstantResourceId")
     protected final boolean runCommonAction(final @StringRes int action) {
         final Editable text = _hlEditor.getText();
-        switch (action) {
-            case R.string.abid_common_unordered_list_char: {
-                runRegularPrefixAction(_appSettings.getUnorderedListCharacter() + " ");
+        if (action == R.string.abid_common_unordered_list_char) {
+            runRegularPrefixAction(_appSettings.getUnorderedListCharacter() + " ");
+            return true;
+        } else if (action == R.string.abid_common_checkbox_list) {
+            runRegularPrefixAction("- [ ] ", "- [x] ", true);
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_number) {
+            runRegularPrefixAction("1. ");
+            return true;
+        } else if (action == R.string.abid_common_time) {
+            DatetimeFormatDialog.showDatetimeFormatDialog(_activity, _hlEditor);
+            return true;
+        } else if (action == R.string.abid_common_accordion) {
+            _hlEditor.insertOrReplaceTextOnCursor("<details markdown='1'><summary>" + getResString(R.string.expand_collapse) + "</summary>\n" + HighlightingEditor.PLACE_CURSOR_HERE_TOKEN + "\n\n</details>");
+            return true;
+        } else if (action == R.string.abid_common_insert_audio) {
+            AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.AUDIO_ACTION, _document.getFormat(), _activity, text, _document.file);
+            return true;
+        } else if (action == R.string.abid_common_insert_link) {
+            AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.FILE_OR_LINK_ACTION, _document.getFormat(), _activity, text, _document.file);
+            return true;
+        } else if (action == R.string.abid_common_insert_image) {
+            AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.IMAGE_ACTION, _document.getFormat(), _activity, text, _document.file);
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_renumber) {
+            renumberOrderedList();
+            return true;
+        } else if (action == R.string.abid_common_move_text_one_line_up || action == R.string.abid_common_move_text_one_line_down) {
+            moveLine(action == R.string.abid_common_move_text_one_line_up);
+            return true;
+        } else if (action == R.string.abid_common_indent || action == R.string.abid_common_deindent) {
+            runIndentLines(action == R.string.abid_common_deindent);
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_common_insert_snippet) {
+            MarkorDialogFactory.showInsertSnippetDialog(_activity, (snip) -> {
+                _hlEditor.insertOrReplaceTextOnCursor(TextViewUtils.interpolateSnippet(snip, _document.title, TextViewUtils.getSelectedText(_hlEditor)));
+                _lastSnip = snip;
+            });
+            return true;
+        } else if (action == R.string.abid_common_open_link_browser) {
+            final int sel = TextViewUtils.getSelection(_hlEditor)[0];
+            if (sel < 0) {
                 return true;
             }
-            case R.string.abid_common_checkbox_list: {
-                runRegularPrefixAction("- [ ] ", "- [x] ", true);
-                return true;
-            }
-            case R.string.abid_common_ordered_list_number: {
-                runRegularPrefixAction("1. ");
-                return true;
-            }
-            case R.string.abid_common_time: {
-                DatetimeFormatDialog.showDatetimeFormatDialog(_activity, _hlEditor);
-                return true;
-            }
-            case R.string.abid_common_accordion: {
-                _hlEditor.insertOrReplaceTextOnCursor("<details markdown='1'><summary>" + getResString(R.string.expand_collapse) + "</summary>\n" + HighlightingEditor.PLACE_CURSOR_HERE_TOKEN + "\n\n</details>");
-                return true;
-            }
-            case R.string.abid_common_insert_audio: {
-                AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.AUDIO_ACTION, _document.getFormat(), _activity, text, _document.file);
-                return true;
-            }
-            case R.string.abid_common_insert_link: {
-                AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.FILE_OR_LINK_ACTION, _document.getFormat(), _activity, text, _document.file);
-                return true;
-            }
-            case R.string.abid_common_insert_image: {
-                AttachLinkOrFileDialog.showInsertImageOrLinkDialog(AttachLinkOrFileDialog.IMAGE_ACTION, _document.getFormat(), _activity, text, _document.file);
-                return true;
-            }
-            case R.string.abid_common_ordered_list_renumber: {
-                renumberOrderedList();
-                return true;
-            }
-            case R.string.abid_common_move_text_one_line_up:
-            case R.string.abid_common_move_text_one_line_down: {
-                moveLine(action == R.string.abid_common_move_text_one_line_up);
-                return true;
-            }
-            case R.string.abid_common_indent:
-            case R.string.abid_common_deindent: {
-                runIndentLines(action == R.string.abid_common_deindent);
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_common_insert_snippet: {
-                MarkorDialogFactory.showInsertSnippetDialog(_activity, (snip) -> {
-                    _hlEditor.insertOrReplaceTextOnCursor(TextViewUtils.interpolateSnippet(snip, _document.title, TextViewUtils.getSelectedText(_hlEditor)));
-                    _lastSnip = snip;
-                });
-                return true;
-            }
-            case R.string.abid_common_open_link_browser: {
-                final int sel = TextViewUtils.getSelection(_hlEditor)[0];
-                if (sel < 0) {
-                    return true;
-                }
 
-                final String line = TextViewUtils.getSelectedLines(_hlEditor, sel);
-                final int cursor = sel - TextViewUtils.getLineStart(_hlEditor.getText(), sel);
+            final String line = TextViewUtils.getSelectedLines(_hlEditor, sel);
+            final int cursor = sel - TextViewUtils.getLineStart(_hlEditor.getText(), sel);
 
-                // First try to pull a resource
-                String url = null;
-                final String resource = GsTextUtils.tryExtractResourceAroundPos(line, cursor);
-                if (resource != null) {
-                    if (WEB_URL.matcher(resource).matches()) {
-                        url = resource;
-                    } else {
-                        final File f = GsFileUtils.makeAbsolute(resource, _document.file.getParentFile());
-                        if (f.canRead()) {
-                            DocumentActivity.launch(getActivity(), f, null, null);
-                            return true;
-                        }
-                    }
-                }
-
-                // Then try to pull a tag
-                url = url == null ? GsTextUtils.tryExtractUrlAroundPos(line, cursor) : url;
-                if (url != null) {
-                    if (url.endsWith(")")) {
-                        url = url.substring(0, url.length() - 1);
-                    }
-                    _cu.openWebpageInExternalBrowser(getContext(), url);
-                }
-
-                return true;
-            }
-            case R.string.abid_common_special_key: {
-                runSpecialKeyAction();
-                return true;
-            }
-            case R.string.abid_common_new_line_below: {
-                // Go to end of line, works with wrapped lines too
-                final int sel = TextViewUtils.getSelection(_hlEditor)[1];
-                if (sel > 0) {
-                    _hlEditor.setSelection(TextViewUtils.getLineEnd(text, sel));
-                    _hlEditor.simulateKeyPress(KeyEvent.KEYCODE_ENTER);
-                }
-                return true;
-            }
-            case R.string.abid_common_delete_lines: {
-                final int[] sel = TextViewUtils.getLineSelection(text);
-                if (GsTextUtils.isValidSelection(text, sel)) {
-                    final boolean lastLine = sel[1] == text.length();
-                    final boolean firstLine = sel[0] == 0;
-                    text.delete(sel[0] - (lastLine && !firstLine ? 1 : 0), sel[1] + (lastLine ? 0 : 1));
-                }
-                return true;
-            }
-            case R.string.abid_common_duplicate_lines: {
-                duplicateLineSelection(_hlEditor);
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_common_web_jump_to_very_top_or_bottom: {
-                runJumpBottomTopAction(ActionItem.DisplayMode.VIEW);
-                return true;
-            }
-            case R.string.abid_common_web_jump_to_table_of_contents: {
-                if (_appSettings.isMarkdownTableOfContentsEnabled() && _webView != null) {
-                    _webView.loadUrl("javascript:document.getElementsByClassName('toc')[0].scrollIntoView();");
+            // First try to pull a resource
+            String url = null;
+            final String resource = GsTextUtils.tryExtractResourceAroundPos(line, cursor);
+            if (resource != null) {
+                if (WEB_URL.matcher(resource).matches()) {
+                    url = resource;
                 } else {
-                    runTitleClick();
+                    final File f = GsFileUtils.makeAbsolute(resource, _document.file.getParentFile());
+                    if (f.canRead()) {
+                        DocumentActivity.launch(getActivity(), f, null, null);
+                        return true;
+                    }
                 }
-                return true;
             }
-            case R.string.abid_common_view_file_in_other_app: {
-                _cu.viewFileInOtherApp(getContext(), _document.file, GsFileUtils.getMimeType(_document.file));
-                return true;
+
+            // Then try to pull a tag
+            url = url == null ? GsTextUtils.tryExtractUrlAroundPos(line, cursor) : url;
+            if (url != null) {
+                if (url.endsWith(")")) {
+                    url = url.substring(0, url.length() - 1);
+                }
+                _cu.openWebpageInExternalBrowser(getContext(), url);
             }
-            case R.string.abid_common_rotate_screen: {
-                _cu.nextScreenRotationSetting(_activity);
-                return true;
+
+            return true;
+        } else if (action == R.string.abid_common_special_key) {
+            runSpecialKeyAction();
+            return true;
+        } else if (action == R.string.abid_common_new_line_below) {
+            // Go to end of line, works with wrapped lines too
+            final int sel = TextViewUtils.getSelection(_hlEditor)[1];
+            if (sel > 0) {
+                _hlEditor.setSelection(TextViewUtils.getLineEnd(text, sel));
+                _hlEditor.simulateKeyPress(KeyEvent.KEYCODE_ENTER);
             }
-            case R.string.abid_common_change_case: {
-                MarkorDialogFactory.showCaseDialog(_activity, _hlEditor.getText());
-                return true;
+            return true;
+        } else if (action == R.string.abid_common_delete_lines) {
+            final int[] sel = TextViewUtils.getLineSelection(text);
+            if (GsTextUtils.isValidSelection(text, sel)) {
+                final boolean lastLine = sel[1] == text.length();
+                final boolean firstLine = sel[0] == 0;
+                text.delete(sel[0] - (lastLine && !firstLine ? 1 : 0), sel[1] + (lastLine ? 0 : 1));
             }
+            return true;
+        } else if (action == R.string.abid_common_duplicate_lines) {
+            duplicateLineSelection(_hlEditor);
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_common_web_jump_to_very_top_or_bottom) {
+            runJumpBottomTopAction(ActionItem.DisplayMode.VIEW);
+            return true;
+        } else if (action == R.string.abid_common_web_jump_to_table_of_contents) {
+            if (_appSettings.isMarkdownTableOfContentsEnabled() && _webView != null) {
+                _webView.loadUrl("javascript:document.getElementsByClassName('toc')[0].scrollIntoView();");
+            } else {
+                runTitleClick();
+            }
+            return true;
+        } else if (action == R.string.abid_common_view_file_in_other_app) {
+            _cu.viewFileInOtherApp(getContext(), _document.file, GsFileUtils.getMimeType(_document.file));
+            return true;
+        } else if (action == R.string.abid_common_rotate_screen) {
+            _cu.nextScreenRotationSetting(_activity);
+            return true;
+        } else if (action == R.string.abid_common_change_case) {
+            MarkorDialogFactory.showCaseDialog(_activity, _hlEditor.getText());
+            return true;
         }
         return false;
     }
@@ -943,67 +918,56 @@ public abstract class ActionButtonBase {
     // Can be called _explicitly_ by a derived class
     @SuppressLint("NonConstantResourceId")
     protected final boolean runCommonLongPressAction(@StringRes int action) {
-        switch (action) {
-            case R.string.abid_common_deindent:
-            case R.string.abid_common_indent: {
-                MarkorDialogFactory.showIndentSizeDialog(_activity, _indent, (size) -> {
-                    _indent = Integer.parseInt(size);
-                    _appSettings.setDocumentIndentSize(_document.path, _indent);
-                });
-                return true;
-            }
-            case R.string.abid_common_special_key: {
-                jumpToCursor();
-                return true;
-            }
-            case R.string.abid_common_time: {
-                try {
-                    String date = DatetimeFormatDialog.getMostRecentDate(getContext());
-                    if (date.isEmpty()) {
-                        return false; // Just display the tooltip text
-                    } else {
-                        _hlEditor.insertOrReplaceTextOnCursor(date);
-                        return true;
-                    }
-                } catch (Exception ignored) {
+        if (action == R.string.abid_common_deindent || action == R.string.abid_common_indent) {
+            MarkorDialogFactory.showIndentSizeDialog(_activity, _indent, (size) -> {
+                _indent = Integer.parseInt(size);
+                _appSettings.setDocumentIndentSize(_document.path, _indent);
+            });
+            return true;
+        } else if (action == R.string.abid_common_special_key) {
+            jumpToCursor();
+            return true;
+        } else if (action == R.string.abid_common_time) {
+            try {
+                String date = DatetimeFormatDialog.getMostRecentDate(getContext());
+                if (date.isEmpty()) {
+                    return false; // Just display the tooltip text
+                } else {
+                    _hlEditor.insertOrReplaceTextOnCursor(date);
+                    return true;
                 }
-                return true;
+            } catch (Exception ignored) {
             }
-            case R.string.abid_common_ordered_list_number: {
-                runRenumberOrderedListIfRequired(true);
-                return true;
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_number) {
+            runRenumberOrderedListIfRequired(true);
+            return true;
+        } else if (action == R.string.abid_common_insert_snippet) {
+            if (!TextUtils.isEmpty(_lastSnip)) {
+                _hlEditor.insertOrReplaceTextOnCursor(TextViewUtils.interpolateSnippet(_lastSnip, _document.title, TextViewUtils.getSelectedText(_hlEditor)));
             }
-            case R.string.abid_common_insert_snippet: {
-                if (!TextUtils.isEmpty(_lastSnip)) {
-                    _hlEditor.insertOrReplaceTextOnCursor(TextViewUtils.interpolateSnippet(_lastSnip, _document.title, TextViewUtils.getSelectedText(_hlEditor)));
+            return true;
+        } else if (action == R.string.abid_common_insert_audio) {
+            AttachLinkOrFileDialog.insertAudioRecording(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
+            return true;
+        } else if (action == R.string.abid_common_insert_link) {
+            AttachLinkOrFileDialog.insertGalleryPhoto(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
+            return true;
+        } else if (action == R.string.abid_common_insert_image) {
+            AttachLinkOrFileDialog.insertCameraPhoto(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
+            return true;
+        } else if (action == R.string.abid_common_new_line_below) {
+            // Long press = line above
+            final Editable text = _hlEditor.getText();
+            if (text != null) {
+                final int sel = TextViewUtils.getSelection(text)[0];
+                if (sel >= 0) {
+                    final int lineStart = TextViewUtils.getLineStart(text, sel);
+                    text.insert(lineStart, "\n");
+                    _hlEditor.setSelection(lineStart);
                 }
-                return true;
             }
-            case R.string.abid_common_insert_audio: {
-                AttachLinkOrFileDialog.insertAudioRecording(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
-                return true;
-            }
-            case R.string.abid_common_insert_link: {
-                AttachLinkOrFileDialog.insertGalleryPhoto(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
-                return true;
-            }
-            case R.string.abid_common_insert_image: {
-                AttachLinkOrFileDialog.insertCameraPhoto(_activity, _document.getFormat(), _hlEditor.getText(), _document.file);
-                return true;
-            }
-            case R.string.abid_common_new_line_below: {
-                // Long press = line above
-                final Editable text = _hlEditor.getText();
-                if (text != null) {
-                    final int sel = TextViewUtils.getSelection(text)[0];
-                    if (sel >= 0) {
-                        final int lineStart = TextViewUtils.getLineStart(text, sel);
-                        text.insert(lineStart, "\n");
-                        _hlEditor.setSelection(lineStart);
-                    }
-                }
-                return true;
-            }
+            return true;
         }
         return false;
     }

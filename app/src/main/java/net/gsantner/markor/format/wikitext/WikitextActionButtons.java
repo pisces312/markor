@@ -71,106 +71,83 @@ public class WikitextActionButtons extends ActionButtonBase {
 
     @Override
     public boolean onActionClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_wikitext_h1: {
-                toggleHeading(1);
-                return true;
-            }
-            case R.string.abid_wikitext_h2: {
-                toggleHeading(2);
-                return true;
-            }
-            case R.string.abid_wikitext_h3: {
-                toggleHeading(3);
-                return true;
-            }
-            case R.string.abid_wikitext_h4: {
-                toggleHeading(4);
-                return true;
-            }
-            case R.string.abid_wikitext_h5: {
-                toggleHeading(5);
-                return true;
-            }
-            case R.string.abid_common_unordered_list_char: {
-                runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix());
-                return true;
-            }
-            case R.string.abid_common_checkbox_list: {
-                runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithNextStateCheckbox());
-                return true;
-            }
-            case R.string.abid_common_ordered_list_number: {
-                runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
-                // TODO: adapt to zim wiki
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_wikitext_bold: {
-                runSurroundAction("**");
-                return true;
-            }
-            case R.string.abid_wikitext_italic: {
-                runSurroundAction("//");
-                return true;
-            }
-            case R.string.abid_wikitext_highlight: {
-                runSurroundAction("__");
-                return true;
-            }
-            case R.string.abid_wikitext_strikeout: {
-                runSurroundAction("~~");
-                return true;
-            }
-            case R.string.abid_wikitext_code_inline: {
-                runSurroundAction("''");
-                return true;
-            }
-            case R.string.abid_common_indent:
-                runRegexReplaceAction(WikitextReplacePatternGenerator.indentOneTab());
-                runRenumberOrderedListIfRequired();
-                return true;
-            case R.string.abid_common_deindent: {
-                runRegexReplaceAction(WikitextReplacePatternGenerator.deindentOneTab());
-                runRenumberOrderedListIfRequired();
-                return true;
-            }
-            case R.string.abid_common_open_link_browser: {
-                openLink();
-                return true;
-            }
-            default: {
-                return runCommonAction(action);
-            }
+        if (action == R.string.abid_wikitext_h1) {
+            toggleHeading(1);
+            return true;
+        } else if (action == R.string.abid_wikitext_h2) {
+            toggleHeading(2);
+            return true;
+        } else if (action == R.string.abid_wikitext_h3) {
+            toggleHeading(3);
+            return true;
+        } else if (action == R.string.abid_wikitext_h4) {
+            toggleHeading(4);
+            return true;
+        } else if (action == R.string.abid_wikitext_h5) {
+            toggleHeading(5);
+            return true;
+        } else if (action == R.string.abid_common_unordered_list_char) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithUnorderedListPrefixOrRemovePrefix());
+            return true;
+        } else if (action == R.string.abid_common_checkbox_list) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithNextStateCheckbox());
+            return true;
+        } else if (action == R.string.abid_common_ordered_list_number) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.replaceWithOrderedListPrefixOrRemovePrefix());
+            // TODO: adapt to zim wiki
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_wikitext_bold) {
+            runSurroundAction("**");
+            return true;
+        } else if (action == R.string.abid_wikitext_italic) {
+            runSurroundAction("//");
+            return true;
+        } else if (action == R.string.abid_wikitext_highlight) {
+            runSurroundAction("__");
+            return true;
+        } else if (action == R.string.abid_wikitext_strikeout) {
+            runSurroundAction("~~");
+            return true;
+        } else if (action == R.string.abid_wikitext_code_inline) {
+            runSurroundAction("''");
+            return true;
+        } else if (action == R.string.abid_common_indent) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.indentOneTab());
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_common_deindent) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.deindentOneTab());
+            runRenumberOrderedListIfRequired();
+            return true;
+        } else if (action == R.string.abid_common_open_link_browser) {
+            openLink();
+            return true;
+        } else {
+            return runCommonAction(action);
         }
     }
 
     @Override
     public boolean onActionLongClick(final @StringRes int action) {
-        switch (action) {
-            case R.string.abid_common_checkbox_list: {
-                runRegexReplaceAction(WikitextReplacePatternGenerator.removeCheckbox());
-                return true;
-            }
-            case R.string.abid_common_insert_link: {
-                int pos = _hlEditor.getSelectionStart();
-                _hlEditor.getText().insert(pos, "[[]]");
-                _hlEditor.setSelection(pos + 2);
-                return true;
-            }
-            case R.string.abid_common_insert_image: {
-                int pos = _hlEditor.getSelectionStart();
-                _hlEditor.getText().insert(pos, "{{}}");
-                _hlEditor.setSelection(pos + 2);
-                return true;
-            }
-            case R.string.abid_wikitext_code_inline: {
-                _hlEditor.withAutoFormatDisabled(() -> surroundBlock(_hlEditor.getText(), "'''"));
-                return true;
-            }
-            default: {
-                return runCommonLongPressAction(action);
-            }
+        if (action == R.string.abid_common_checkbox_list) {
+            runRegexReplaceAction(WikitextReplacePatternGenerator.removeCheckbox());
+            return true;
+        } else if (action == R.string.abid_common_insert_link) {
+            int pos = _hlEditor.getSelectionStart();
+            _hlEditor.getText().insert(pos, "[[]]");
+            _hlEditor.setSelection(pos + 2);
+            return true;
+        } else if (action == R.string.abid_common_insert_image) {
+            int pos = _hlEditor.getSelectionStart();
+            _hlEditor.getText().insert(pos, "{{}}");
+            _hlEditor.setSelection(pos + 2);
+            return true;
+        } else if (action == R.string.abid_wikitext_code_inline) {
+            _hlEditor.withAutoFormatDisabled(() -> surroundBlock(_hlEditor.getText(), "'''"));
+            return true;
+        } else {
+            return runCommonLongPressAction(action);
         }
     }
 

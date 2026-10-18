@@ -249,144 +249,115 @@ public class SettingsActivity extends MarkorBaseActivity {
         @SuppressWarnings({"ConstantConditions", "ConstantIfStatement", "StatementWithEmptyBody"})
         public Boolean onPreferenceClicked(Preference preference, String key, int keyResId) {
             final FragmentManager fragManager = getActivity().getSupportFragmentManager();
-            switch (keyResId) {
-                case R.string.pref_key__request_external_storage: {
-                    GsContextUtils.instance.requestExternalStoragePermission(getActivity());
-                    return true;
-                }
-                case R.string.pref_key__snippet_directory_path: {
-                    MarkorFileBrowserFactory.showFolderDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
-                        @Override
-                        public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
-                            _appSettings.setSnippetDirectory(file);
-                            doUpdatePreferences();
-                        }
+            if (keyResId == R.string.pref_key__request_external_storage) {
+                GsContextUtils.instance.requestExternalStoragePermission(getActivity());
+                return true;
+            } else if (keyResId == R.string.pref_key__snippet_directory_path) {
+                MarkorFileBrowserFactory.showFolderDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
+                    @Override
+                    public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
+                        _appSettings.setSnippetDirectory(file);
+                        doUpdatePreferences();
+                    }
 
-                        @Override
-                        public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
-                            dopt.titleText = R.string.snippet_directory;
-                            dopt.rootFolder = _appSettings.getNotebookDirectory();
-                        }
-                    }, fragManager, getActivity());
-                    return true;
-                }
+                    @Override
+                    public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
+                        dopt.titleText = R.string.snippet_directory;
+                        dopt.rootFolder = _appSettings.getNotebookDirectory();
+                    }
+                }, fragManager, getActivity());
+                return true;
+            } else if (keyResId == R.string.pref_key__notebook_directory) {
+                MarkorFileBrowserFactory.showFolderDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
+                    @Override
+                    public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
+                        _appSettings.setNotebookDirectory(file);
+                        _appSettings.setRecreateMainRequired(true);
+                        doUpdatePreferences();
+                    }
 
-                case R.string.pref_key__notebook_directory: {
-                    MarkorFileBrowserFactory.showFolderDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
-                        @Override
-                        public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
-                            _appSettings.setNotebookDirectory(file);
-                            _appSettings.setRecreateMainRequired(true);
-                            doUpdatePreferences();
-                        }
+                    @Override
+                    public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
+                        dopt.titleText = R.string.select_storage_folder;
+                        dopt.rootFolder = _appSettings.getNotebookDirectory();
+                    }
+                }, fragManager, getActivity());
+                return true;
+            } else if (keyResId == R.string.pref_key__quicknote_filepath) {
+                MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
+                    @Override
+                    public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
+                        _appSettings.setQuickNoteFile(file);
+                        _appSettings.setRecreateMainRequired(true);
+                        doUpdatePreferences();
+                    }
 
-                        @Override
-                        public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
-                            dopt.titleText = R.string.select_storage_folder;
-                            dopt.rootFolder = _appSettings.getNotebookDirectory();
-                        }
-                    }, fragManager, getActivity());
-                    return true;
-                }
-                case R.string.pref_key__quicknote_filepath: {
-                    MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
-                        @Override
-                        public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
-                            _appSettings.setQuickNoteFile(file);
-                            _appSettings.setRecreateMainRequired(true);
-                            doUpdatePreferences();
-                        }
+                    @Override
+                    public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
+                        dopt.titleText = R.string.quicknote;
+                        dopt.rootFolder = _appSettings.getNotebookDirectory();
+                        dopt.newDirButtonEnable = false;
+                    }
+                }, fragManager, getActivity(), MarkorFileBrowserFactory.IsMimeText);
+                return true;
+            } else if (keyResId == R.string.pref_key__todo_filepath) {
+                MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
+                    @Override
+                    public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
+                        _appSettings.setTodoFile(file);
+                        _appSettings.setRecreateMainRequired(true);
+                        doUpdatePreferences();
+                    }
 
-                        @Override
-                        public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
-                            dopt.titleText = R.string.quicknote;
-                            dopt.rootFolder = _appSettings.getNotebookDirectory();
-                            dopt.newDirButtonEnable = false;
-                        }
-                    }, fragManager, getActivity(), MarkorFileBrowserFactory.IsMimeText);
-                    return true;
-                }
-                case R.string.pref_key__todo_filepath: {
-                    MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
-                        @Override
-                        public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
-                            _appSettings.setTodoFile(file);
-                            _appSettings.setRecreateMainRequired(true);
-                            doUpdatePreferences();
-                        }
-
-                        @Override
-                        public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
-                            dopt.titleText = R.string.todo;
-                            dopt.rootFolder = _appSettings.getNotebookDirectory();
-                            dopt.newDirButtonEnable = false;
-                        }
-                    }, fragManager, getActivity(), MarkorFileBrowserFactory.IsMimeText);
-                    return true;
-                }
-                case R.string.pref_key__basic_color_scheme_markor: {
-                    _appSettings.setEditorBasicColor(true, R.color.dark__primary_text, R.color.dark__background);
-                    _appSettings.setEditorBasicColor(false, R.color.light__primary_text, R.color.light__background);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_blackorwhite: {
-                    _appSettings.setEditorBasicColor(true, R.color.white, R.color.black);
-                    _appSettings.setEditorBasicColor(false, R.color.black, R.color.white);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_solarized: {
-                    _appSettings.setEditorBasicColor(true, R.color.solarized_fg, R.color.solarized_bg_dark);
-                    _appSettings.setEditorBasicColor(false, R.color.solarized_fg, R.color.solarized_bg_light);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_gruvbox: {
-                    _appSettings.setEditorBasicColor(true, R.color.gruvbox_fg_dark, R.color.gruvbox_bg_dark);
-                    _appSettings.setEditorBasicColor(false, R.color.gruvbox_fg_light, R.color.gruvbox_bg_light);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_nord: {
-                    _appSettings.setEditorBasicColor(true, R.color.nord_fg_dark, R.color.nord_bg_dark);
-                    _appSettings.setEditorBasicColor(false, R.color.nord_fg_light, R.color.nord_bg_light);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_greenscale: {
-                    _appSettings.setEditorBasicColor(true, R.color.green_dark, R.color.black);
-                    _appSettings.setEditorBasicColor(false, R.color.green_light, R.color.white);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__basic_color_scheme_sepia: {
-                    _appSettings.setEditorBasicColor(true, R.color.sepia_bg_light__fg_dark, R.color.sepia_fg_light__bg_dark);
-                    _appSettings.setEditorBasicColor(false, R.color.sepia_fg_light__bg_dark, R.color.sepia_bg_light__fg_dark);
-                    _appSettings.setRecreateMainRequired(true);
-                    break;
-                }
-                case R.string.pref_key__plaintext__reorder_actions:
-                case R.string.pref_key__asciidoc__reorder_actions:
-                case R.string.pref_key__markdown__reorder_actions:
-                case R.string.pref_key__wikitext_reorder_actions:
-                case R.string.pref_key__orgmode__reorder_actions:
-                case R.string.pref_key__todotxt__reorder_actions: {
-                    startActivity(new Intent(getActivity(), ActionButtonSettingsActivity.class).putExtra(ActionButtonSettingsActivity.EXTRA_FORMAT_KEY, keyResId));
-                    break;
-                }
-                case R.string.pref_key__set_encryption_password: {
-                    MarkorDialogFactory.showSetPasswordDialog(getActivity());
-                    break;
-                }
-                case R.string.pref_key__backup_settings: {
-                    BackupUtils.showBackupWriteToDialog(getContext(), getFragmentManager());
-                    break;
-                }
-                case R.string.pref_key__restore_settings: {
-                    BackupUtils.showBackupSelectFromDialog(getContext(), getFragmentManager());
-                    break;
-                }
+                    @Override
+                    public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
+                        dopt.titleText = R.string.todo;
+                        dopt.rootFolder = _appSettings.getNotebookDirectory();
+                        dopt.newDirButtonEnable = false;
+                    }
+                }, fragManager, getActivity(), MarkorFileBrowserFactory.IsMimeText);
+                return true;
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_markor) {
+                _appSettings.setEditorBasicColor(true, R.color.dark__primary_text, R.color.dark__background);
+                _appSettings.setEditorBasicColor(false, R.color.light__primary_text, R.color.light__background);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_blackorwhite) {
+                _appSettings.setEditorBasicColor(true, R.color.white, R.color.black);
+                _appSettings.setEditorBasicColor(false, R.color.black, R.color.white);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_solarized) {
+                _appSettings.setEditorBasicColor(true, R.color.solarized_fg, R.color.solarized_bg_dark);
+                _appSettings.setEditorBasicColor(false, R.color.solarized_fg, R.color.solarized_bg_light);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_gruvbox) {
+                _appSettings.setEditorBasicColor(true, R.color.gruvbox_fg_dark, R.color.gruvbox_bg_dark);
+                _appSettings.setEditorBasicColor(false, R.color.gruvbox_fg_light, R.color.gruvbox_bg_light);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_nord) {
+                _appSettings.setEditorBasicColor(true, R.color.nord_fg_dark, R.color.nord_bg_dark);
+                _appSettings.setEditorBasicColor(false, R.color.nord_fg_light, R.color.nord_bg_light);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_greenscale) {
+                _appSettings.setEditorBasicColor(true, R.color.green_dark, R.color.black);
+                _appSettings.setEditorBasicColor(false, R.color.green_light, R.color.white);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__basic_color_scheme_sepia) {
+                _appSettings.setEditorBasicColor(true, R.color.sepia_bg_light__fg_dark, R.color.sepia_fg_light__bg_dark);
+                _appSettings.setEditorBasicColor(false, R.color.sepia_fg_light__bg_dark, R.color.sepia_bg_light__fg_dark);
+                _appSettings.setRecreateMainRequired(true);
+            } else if (keyResId == R.string.pref_key__plaintext__reorder_actions
+                    || keyResId == R.string.pref_key__asciidoc__reorder_actions
+                    || keyResId == R.string.pref_key__markdown__reorder_actions
+                    || keyResId == R.string.pref_key__wikitext_reorder_actions
+                    || keyResId == R.string.pref_key__orgmode__reorder_actions
+                    || keyResId == R.string.pref_key__todotxt__reorder_actions) {
+                startActivity(new Intent(getActivity(), ActionButtonSettingsActivity.class).putExtra(ActionButtonSettingsActivity.EXTRA_FORMAT_KEY, keyResId));
+            } else if (keyResId == R.string.pref_key__set_encryption_password) {
+                MarkorDialogFactory.showSetPasswordDialog(getActivity());
+            } else if (keyResId == R.string.pref_key__backup_settings) {
+                BackupUtils.showBackupWriteToDialog(getContext(), getFragmentManager());
+            } else if (keyResId == R.string.pref_key__restore_settings) {
+                BackupUtils.showBackupSelectFromDialog(getContext(), getFragmentManager());
             }
 
             if (key.startsWith("pref_key__editor_basic_color_scheme") && !key.contains("_fg_") && !key.contains("_bg_")) {

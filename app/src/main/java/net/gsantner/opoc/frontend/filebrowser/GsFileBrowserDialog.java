@@ -206,36 +206,25 @@ public class GsFileBrowserDialog extends DialogFragment implements GsFileBrowser
     }
 
     public void onClicked(final View view) {
-        switch (view.getId()) {
-            case R.id.ui__filesystem_dialog__button_ok:
-            case R.id.ui__filesystem_dialog__home: {
-                _filesystemViewerAdapter.onClick(view);
-                break;
+        final int id = view.getId();
+        if (id == R.id.ui__filesystem_dialog__button_ok || id == R.id.ui__filesystem_dialog__home) {
+            _filesystemViewerAdapter.onClick(view);
+        } else if (id == R.id.ui__filesystem_dialog__search_button) {
+            if (_searchEdit.getVisibility() == View.GONE) {
+                _searchEdit.setText("");
+                _searchEdit.setVisibility(View.VISIBLE);
+                _searchEdit.requestFocus();
+            } else {
+                _searchEdit.setText("");
+                _searchEdit.setVisibility(View.GONE);
+                _searchEdit.clearFocus();
             }
-            case R.id.ui__filesystem_dialog__search_button: {
-                if (_searchEdit.getVisibility() == View.GONE) {
-                    _searchEdit.setText("");
-                    _searchEdit.setVisibility(View.VISIBLE);
-                    _searchEdit.requestFocus();
-                } else {
-                    _searchEdit.setText("");
-                    _searchEdit.setVisibility(View.GONE);
-                    _searchEdit.clearFocus();
-                }
-                break;
-            }
-            case R.id.ui__filesystem_dialog__button_cancel: {
-                onFsViewerCancel(_dopt.requestId);
-                break;
-            }
-            case R.id.ui__filesystem_dialog__new_dir: {
-                showNewDirDialog();
-                break;
-            }
-            case R.id.ui__filesystem_dialog__button_neutral: {
-                onFsViewerNeutralButtonPressed(_filesystemViewerAdapter.getCurrentFolder());
-                break;
-            }
+        } else if (id == R.id.ui__filesystem_dialog__button_cancel) {
+            onFsViewerCancel(_dopt.requestId);
+        } else if (id == R.id.ui__filesystem_dialog__new_dir) {
+            showNewDirDialog();
+        } else if (id == R.id.ui__filesystem_dialog__button_neutral) {
+            onFsViewerNeutralButtonPressed(_filesystemViewerAdapter.getCurrentFolder());
         }
     }
 

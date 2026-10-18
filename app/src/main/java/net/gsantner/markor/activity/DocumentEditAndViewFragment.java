@@ -543,211 +543,181 @@ public class DocumentEditAndViewFragment extends MarkorBaseFragment implements F
         }
 
         final int itemId = item.getItemId();
-        switch (itemId) {
-            case R.id.action_undo: {
-                undo();
-                return true;
+        if (itemId == R.id.action_undo) {
+            undo();
+            return true;
+        } else if (itemId == R.id.action_redo) {
+            redo();
+            return true;
+        } else if (itemId == R.id.action_save) {
+            saveDocument(true);
+            return true;
+        } else if (itemId == R.id.action_reload) {
+            reload();
+            return true;
+        } else if (itemId == R.id.action_preview) {
+            setViewModeVisibility(true);
+            return true;
+        } else if (itemId == R.id.action_edit) {
+            setViewModeVisibility(false);
+            return true;
+        } else if (itemId == R.id.action_preview_edit_toggle) {
+            togglePreview();
+            return true;
+        } else if (itemId == R.id.action_share_path) {
+            _cu.shareText(getActivity(), _document.file.getAbsolutePath(), GsContextUtils.MIME_TEXT_PLAIN);
+            return true;
+        } else if (itemId == R.id.action_share_text) {
+            if (saveDocument(false)) {
+                _cu.shareText(getActivity(), getTextString(), GsContextUtils.MIME_TEXT_PLAIN);
             }
-            case R.id.action_redo: {
-                redo();
-                return true;
+            return true;
+        } else if (itemId == R.id.action_share_file) {
+            if (saveDocument(false)) {
+                _cu.shareStream(getActivity(), _document.file, GsContextUtils.MIME_TEXT_PLAIN);
             }
-            case R.id.action_save: {
-                saveDocument(true);
-                return true;
-            }
-            case R.id.action_reload: {
-                reload();
-                return true;
-            }
-            case R.id.action_preview: {
-                setViewModeVisibility(true);
-                return true;
-            }
-            case R.id.action_edit: {
-                setViewModeVisibility(false);
-                return true;
-            }
-            case R.id.action_preview_edit_toggle: {
-                togglePreview();
-                return true;
-            }
-            case R.id.action_share_path: {
-                _cu.shareText(getActivity(), _document.file.getAbsolutePath(), GsContextUtils.MIME_TEXT_PLAIN);
-                return true;
-            }
-            case R.id.action_share_text: {
-                if (saveDocument(false)) {
-                    _cu.shareText(getActivity(), getTextString(), GsContextUtils.MIME_TEXT_PLAIN);
-                }
-                return true;
-            }
-            case R.id.action_share_file: {
-                if (saveDocument(false)) {
-                    _cu.shareStream(getActivity(), _document.file, GsContextUtils.MIME_TEXT_PLAIN);
-                }
-                return true;
-            }
-            case R.id.action_share_html:
-            case R.id.action_share_html_source: {
-                if (saveDocument(false)) {
-                    TextConverterBase converter = FormatRegistry.getFormat(_document.getFormat(), activity, _document).getConverter();
-                    _cu.shareText(getActivity(),
-                            converter.convertMarkup(getTextString(), getActivity(), false, _lineNumbersView.isLineNumbersEnabled(), _document.file),
-                            "text/" + (item.getItemId() == R.id.action_share_html ? "html" : "plain")
-                    );
-                }
-                return true;
-            }
-            case R.id.action_share_calendar_event: {
-                if (saveDocument(false)) {
-                    if (!_cu.createCalendarAppointment(getActivity(), _document.title, getTextString(), null)) {
-                        Toast.makeText(activity, R.string.no_calendar_app_is_installed, Toast.LENGTH_SHORT).show();
-                    }
-                }
-                return true;
-            }
-            case R.id.action_share_screenshot:
-            case R.id.action_share_image:
-            case R.id.action_share_pdf: {
-                _appSettings.getSetWebViewFulldrawing(true);
-                if (saveDocument(false)) {
-                    _nextConvertToPrintMode = true;
-                    setViewModeVisibility(true);
-                    Toast.makeText(activity, R.string.please_wait, Toast.LENGTH_LONG).show();
-                    if (_webView != null) {
-                        _webView.postDelayed(() -> {
-                            if (itemId == R.id.action_share_pdf) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                                    _cu.printOrCreatePdfFromWebview(_webView, _document, getTextString().contains("beamer\n"));
-                                }
-                            } else {
-                                Bitmap bmp = _cu.getBitmapFromWebView(_webView, itemId == R.id.action_share_image);
-                                _cu.shareImage(getContext(), bmp, null);
-                            }
-                        }, 7000);
-                    }
-                }
-
-                return true;
-            }
-            case R.string.action_format_wikitext:
-            case R.string.action_format_keyvalue:
-            case R.string.action_format_todotxt:
-            case R.string.action_format_csv:
-            case R.string.action_format_plaintext:
-            case R.string.action_format_asciidoc:
-            case R.string.action_format_orgmode:
-            case R.string.action_format_markdown: {
-                if (itemId != _document.getFormat()) {
-                    _document.setFormat(itemId);
-                    applyTextFormat(itemId);
-                    _appSettings.setDocumentFormat(_document.path, _document.getFormat());
-                }
-                return true;
-            }
-            case R.id.action_search: {
-                setViewModeVisibility(false);
-                _format.getActions().onSearch();
-                return true;
-            }
-            case R.id.action_send_debug_log: {
-                final String text = AppSettings.getDebugLog() + "\n\n------------------------\n\n\n\n" + Document.getMaskedContent(getTextString());
-                _cu.draftEmail(getActivity(), "Debug Log " + getString(R.string.app_name_real), text, "debug@localhost.lan");
-                return true;
-            }
-            case R.id.action_load_epub: {
-                MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
-                                                            @Override
-                                                            public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
-                                                                _hlEditor.setText(GsCoolExperimentalStuff.convertEpubToText(file, getString(R.string.page)));
-                                                            }
-
-                                                            @Override
-                                                            public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
-                                                                dopt.titleText = R.string.select;
-                                                            }
-                                                        }, getParentFragmentManager(), activity,
-                        (context, file) -> file != null && file.getAbsolutePath().toLowerCase().endsWith(".epub")
+            return true;
+        } else if (itemId == R.id.action_share_html || itemId == R.id.action_share_html_source) {
+            if (saveDocument(false)) {
+                TextConverterBase converter = FormatRegistry.getFormat(_document.getFormat(), activity, _document).getConverter();
+                _cu.shareText(getActivity(),
+                        converter.convertMarkup(getTextString(), getActivity(), false, _lineNumbersView.isLineNumbersEnabled(), _document.file),
+                        "text/" + (item.getItemId() == R.id.action_share_html ? "html" : "plain")
                 );
-                return true;
             }
-            case R.id.action_speed_read: {
-                GsCoolExperimentalStuff.showSpeedReadDialog(activity, getTextString());
-                return true;
-            }
-            case R.id.action_wrap_words: {
-                final boolean newState = !isWrapped();
-                _appSettings.setDocumentWrapState(_document.path, newState);
-                setWrapState(newState);
-                if (_isPreviewVisible && _webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    _webView.evaluateJavascript("setWrapWords('" + newState + "');", null);
+            return true;
+        } else if (itemId == R.id.action_share_calendar_event) {
+            if (saveDocument(false)) {
+                if (!_cu.createCalendarAppointment(getActivity(), _document.title, getTextString(), null)) {
+                    Toast.makeText(activity, R.string.no_calendar_app_is_installed, Toast.LENGTH_SHORT).show();
                 }
-                updateMenuToggleStates(0);
-                return true;
             }
-            case R.id.action_line_numbers: {
-                final boolean newState = !_lineNumbersView.isLineNumbersEnabled();
-                _appSettings.setDocumentLineNumbersEnabled(_document.path, newState);
-                _lineNumbersView.setLineNumbersEnabled(newState);
-                if (_isPreviewVisible && _webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    _webView.evaluateJavascript("setLineNumbers('" + newState + "');", null);
-                }
-                updateMenuToggleStates(0);
-                return true;
-            }
-            case R.id.action_enable_highlighting: {
-                final boolean newState = !_hlEditor.getHighlightingEnabled();
-                _hlEditor.setHighlightingEnabled(newState);
-                if (_lineNumbersView.isLineNumbersEnabled()) {
-                    // The line height may be changed, so need to refresh line numbers
-                    final int delay = newState ? 1000 : 200;
-                    _hlEditor.postDelayed(() -> _lineNumbersView.refresh(), delay);
-                    _hlEditor.postDelayed(() -> _lineNumbersView.refresh(), delay + 1000);
-                }
-                _appSettings.setDocumentHighlightState(_document.path, newState);
-                updateMenuToggleStates(0);
-                return true;
-            }
-            case R.id.action_enable_auto_format: {
-                final boolean newState = !_hlEditor.getAutoFormatEnabled();
-                _hlEditor.setAutoFormatEnabled(newState);
-                _appSettings.setDocumentAutoFormatEnabled(_document.path, newState);
-                updateMenuToggleStates(0);
-                return true;
-            }
-            case R.id.action_info: {
-                if (saveDocument(false)) { // In order to have the correct info displayed
-                    FileInfoDialog.show(_document.file, getParentFragmentManager());
-                }
-                return true;
-            }
-            case R.id.action_set_font_size: {
-                final int current = _isPreviewVisible ? _appSettings.getDocumentViewFontSize(_document.path) : _appSettings.getDocumentFontSize(_document.path);
-                MarkorDialogFactory.showFontSizeDialog(activity, current, (newSize) -> {
-                    if (_isPreviewVisible) {
-                        if (_webView != null) {
-                            _webView.getSettings().setTextZoom((int) (newSize * VIEW_FONT_SCALE));
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && _lineNumbersView.isLineNumbersEnabled()) {
-                                _webView.evaluateJavascript("refreshLineNumbers();", null);
+            return true;
+        } else if (itemId == R.id.action_share_screenshot || itemId == R.id.action_share_image || itemId == R.id.action_share_pdf) {
+            _appSettings.getSetWebViewFulldrawing(true);
+            if (saveDocument(false)) {
+                _nextConvertToPrintMode = true;
+                setViewModeVisibility(true);
+                Toast.makeText(activity, R.string.please_wait, Toast.LENGTH_LONG).show();
+                if (_webView != null) {
+                    _webView.postDelayed(() -> {
+                        if (itemId == R.id.action_share_pdf) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                                _cu.printOrCreatePdfFromWebview(_webView, _document, getTextString().contains("beamer\n"));
                             }
+                        } else {
+                            Bitmap bmp = _cu.getBitmapFromWebView(_webView, itemId == R.id.action_share_image);
+                            _cu.shareImage(getContext(), bmp, null);
                         }
-                        _appSettings.setDocumentViewFontSize(_document.path, newSize);
-                    } else {
-                        _hlEditor.setTextSize(TypedValue.COMPLEX_UNIT_SP, (float) newSize);
-                        _appSettings.setDocumentFontSize(_document.path, newSize);
+                    }, 7000);
+                }
+            }
+
+            return true;
+        } else if (itemId == R.string.action_format_wikitext
+                || itemId == R.string.action_format_keyvalue
+                || itemId == R.string.action_format_todotxt
+                || itemId == R.string.action_format_csv
+                || itemId == R.string.action_format_plaintext
+                || itemId == R.string.action_format_asciidoc
+                || itemId == R.string.action_format_orgmode
+                || itemId == R.string.action_format_markdown) {
+            if (itemId != _document.getFormat()) {
+                _document.setFormat(itemId);
+                applyTextFormat(itemId);
+                _appSettings.setDocumentFormat(_document.path, _document.getFormat());
+            }
+            return true;
+        } else if (itemId == R.id.action_search) {
+            setViewModeVisibility(false);
+            _format.getActions().onSearch();
+            return true;
+        } else if (itemId == R.id.action_send_debug_log) {
+            final String text = AppSettings.getDebugLog() + "\n\n------------------------\n\n\n\n" + Document.getMaskedContent(getTextString());
+            _cu.draftEmail(getActivity(), "Debug Log " + getString(R.string.app_name_real), text, "debug@localhost.lan");
+            return true;
+        } else if (itemId == R.id.action_load_epub) {
+            MarkorFileBrowserFactory.showFileDialog(new GsFileBrowserOptions.SelectionListenerAdapter() {
+                                                        @Override
+                                                        public void onFsViewerSelected(String request, File file, final Integer lineNumber) {
+                                                            _hlEditor.setText(GsCoolExperimentalStuff.convertEpubToText(file, getString(R.string.page)));
+                                                        }
+
+                                                        @Override
+                                                        public void onFsViewerConfig(GsFileBrowserOptions.Options dopt) {
+                                                            dopt.titleText = R.string.select;
+                                                        }
+                                                    }, getParentFragmentManager(), activity,
+                    (context, file) -> file != null && file.getAbsolutePath().toLowerCase().endsWith(".epub")
+            );
+            return true;
+        } else if (itemId == R.id.action_speed_read) {
+            GsCoolExperimentalStuff.showSpeedReadDialog(activity, getTextString());
+            return true;
+        } else if (itemId == R.id.action_wrap_words) {
+            final boolean newState = !isWrapped();
+            _appSettings.setDocumentWrapState(_document.path, newState);
+            setWrapState(newState);
+            if (_isPreviewVisible && _webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                _webView.evaluateJavascript("setWrapWords('" + newState + "');", null);
+            }
+            updateMenuToggleStates(0);
+            return true;
+        } else if (itemId == R.id.action_line_numbers) {
+            final boolean newState = !_lineNumbersView.isLineNumbersEnabled();
+            _appSettings.setDocumentLineNumbersEnabled(_document.path, newState);
+            _lineNumbersView.setLineNumbersEnabled(newState);
+            if (_isPreviewVisible && _webView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                _webView.evaluateJavascript("setLineNumbers('" + newState + "');", null);
+            }
+            updateMenuToggleStates(0);
+            return true;
+        } else if (itemId == R.id.action_enable_highlighting) {
+            final boolean newState = !_hlEditor.getHighlightingEnabled();
+            _hlEditor.setHighlightingEnabled(newState);
+            if (_lineNumbersView.isLineNumbersEnabled()) {
+                // The line height may be changed, so need to refresh line numbers
+                final int delay = newState ? 1000 : 200;
+                _hlEditor.postDelayed(() -> _lineNumbersView.refresh(), delay);
+                _hlEditor.postDelayed(() -> _lineNumbersView.refresh(), delay + 1000);
+            }
+            _appSettings.setDocumentHighlightState(_document.path, newState);
+            updateMenuToggleStates(0);
+            return true;
+        } else if (itemId == R.id.action_enable_auto_format) {
+            final boolean newState = !_hlEditor.getAutoFormatEnabled();
+            _hlEditor.setAutoFormatEnabled(newState);
+            _appSettings.setDocumentAutoFormatEnabled(_document.path, newState);
+            updateMenuToggleStates(0);
+            return true;
+        } else if (itemId == R.id.action_info) {
+            if (saveDocument(false)) { // In order to have the correct info displayed
+                FileInfoDialog.show(_document.file, getParentFragmentManager());
+            }
+            return true;
+        } else if (itemId == R.id.action_set_font_size) {
+            final int current = _isPreviewVisible ? _appSettings.getDocumentViewFontSize(_document.path) : _appSettings.getDocumentFontSize(_document.path);
+            MarkorDialogFactory.showFontSizeDialog(activity, current, (newSize) -> {
+                if (_isPreviewVisible) {
+                    if (_webView != null) {
+                        _webView.getSettings().setTextZoom((int) (newSize * VIEW_FONT_SCALE));
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && _lineNumbersView.isLineNumbersEnabled()) {
+                            _webView.evaluateJavascript("refreshLineNumbers();", null);
+                        }
                     }
-                });
-                return true;
-            }
-            case R.id.action_show_file_browser: {
-                // Delay because I want menu to close before we open the file browser
-                _hlEditor.postDelayed(() -> MainActivity.launch(activity, _document.file, false), 250);
-                return true;
-            }
-            default: {
-                return super.onOptionsItemSelected(item);
-            }
+                    _appSettings.setDocumentViewFontSize(_document.path, newSize);
+                } else {
+                    _hlEditor.setTextSize(TypedValue.COMPLEX_UNIT_SP, (float) newSize);
+                    _appSettings.setDocumentFontSize(_document.path, newSize);
+                }
+            });
+            return true;
+        } else if (itemId == R.id.action_show_file_browser) {
+            // Delay because I want menu to close before we open the file browser
+            _hlEditor.postDelayed(() -> MainActivity.launch(activity, _document.file, false), 250);
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
         }
     }
 
