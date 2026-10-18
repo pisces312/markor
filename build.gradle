@@ -41,8 +41,10 @@ buildscript {
 allprojects {
     repositories {
         mavenCentral()
-        maven { url 'https://maven.google.com' }
+        // com.github.* is only on jitpack, and this network times out connecting to maven.google.com:
+        // a connect failure aborts resolution instead of falling through, so jitpack must be probed first.
         maven { url "https://jitpack.io" }
+        maven { url 'https://maven.google.com' }
         google()
     }
 

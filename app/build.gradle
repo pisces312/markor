@@ -36,7 +36,6 @@ android {
         buildConfigField "String", "BUILD_DATE", "\"${getBuildDate()}\""
         buildConfigField "String", "GITHASH", "\"${getGitHash}\""
         buildConfigField "String", "GITMSG", "\"${getGitLastCommitMessage}\""
-        setProperty("archivesBaseName", applicationId + "-v" + versionCode + "-" + versionName)
     }
 
     flavorDimensions = ["default"]
@@ -98,11 +97,25 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     namespace 'net.gsantner.markor'
+    buildFeatures {
+        buildConfig = true
+        resValues = true
+    }
     lint {
         abortOnError false
         disable 'MissingTranslation', 'InvalidPackage', 'ObsoleteLintCustomCheck', 'DefaultLocale', 'UnusedAttribute', 'VectorRaster', 'InflateParams', 'IconLocation', 'UnusedResources', 'TypographyEllipsis'
     }
 
+}
+
+// archivesBaseName disappears in AGP 9, so name the packaged APK through the new Variant API.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            output.outputFileName.set(
+                    "net.gsantner.markor-v${output.versionCode.get()}-${output.versionName.get()}-${variant.flavorName}-${variant.buildType}.apk")
+        }
+    }
 }
 
 dependencies {
