@@ -5,10 +5,11 @@
 
 ## 仓库
 
-- 本地 `D:\3rd-party-projects\markor`；origin = `pisces312/markor`（fork），upstream = `gsantner/markor`
-- `master` 与上游同步至 `aff9492c`（2026-10-10）
-- 工作分支 `flexmark-upgrade`：上游 PR #2407 的 8 个提交 cherry-pick（flexmark 0.64.8 + minSdk 21 + androidx/commons-io）
-- 工作分支 `toolchain-upgrade`（基于 flexmark-upgrade）：Gradle wrapper 9.6.1 + AGP 9.4.0，
+- 本地 `D:\3rd-party-projects\markor`；origin = `pisces312/markor`（fork，public），upstream = `gsantner/markor`
+- `master` = 上游 `aff9492c`（2026-10-10）**+ 本 fork 的 29 个提交**（2026-10-18 以 `--ff-only` 合入两条工作分支，
+  即 flexmark 0.64.8 / 工具链 AGP 9.4.0 / 预览层 JS 资产升级；合后与 `toolchain-upgrade` 逐字节相同）
+- 工作分支 `flexmark-upgrade`（已合入 master）：上游 PR #2407 的 8 个提交 cherry-pick（flexmark 0.64.8 + minSdk 21 + androidx/commons-io）
+- 工作分支 `toolchain-upgrade`（基于 flexmark-upgrade，已合入 master）：Gradle wrapper 9.6.1 + AGP 9.4.0，
   前置改动是把 15 个文件里 20 处 `switch (R.*)` 改成 if/else-if 链（AGP 9 的 R 字段非 final，`case R.*` 不再是常量表达式）
 - 文档指针：`docs/flexmark-upgrade-investigation.md`（升级交接单 + 两轮计划）、`docs/markdown-reader-survey-2026-10.md`（md 阅读器调研）、
   `docs/js-preview-libs-upgrade-2026-10.md`（预览层 JS 资产升级计划，基线清单 `docs/js-preview-libs-baseline.txt`）
