@@ -46,6 +46,52 @@
 - 验证：独立一轮构建 + 冒烟；通过后再合并两分支/合回 master。
 - 回退点：两轮各自独立提交，任何一轮失败可单独回滚不影响另一轮。
 
+## 0.7 第二轮工具链升级结果（2026-10-18 实测）
+
+**结论：Gradle wrapper 8.13 → 9.5.1 落地；AGP 停在 8.13.2 —— AGP 9 和 Gradle 9.6 两头都进不来。**
+
+两条互相独立的硬阻塞，均已取到原始报错，不是推测：
+
+1. **Gradle 9.6 拒绝 AGP 8.x**。`Failed to apply plugin 'com.android.internal.application'` →
+   `Plugin 'com.android.internal.application' relies on 'org.gradle.api.problems.internal.InternalProblems`,
+   a Gradle internal API that was removed in Gradle 9.6.0. … or use Gradle 9.5.`
+   （Gradle 官方升级文档锚点 `upgrading_version_9.html#agp_8x_incompatible`）→ 原计划的 9.6.1 直接不可用，退回本机缓存里的 9.5.1。
+
+2. **AGP 9.4 编不过本仓库代码**。AGP 9 的新资源管线（`generate<Variant>RFile` → `compile_r_class_jar`）生成的 R 字段是
+   `public static int`（非 final），且 `android.nonFinalResIds=false` 已不再被采纳。
+   javap 对照同一个字段 `R$string.abid_common_unordered_list_char`：AGP 8.13 的 R.jar 是 `public static final int`，AGP 9.4 是 `public static int`。
+   后果：所有 `switch (R.id/R.string.*)` 报「需要常量表达式」，实测 **198 处**，集中在
+   `format/ActionButtonBase.java`、`activity/DocumentEditAndViewFragment.java`、`format/*/​*ActionButtons.java` 等 10+ 文件。
+   三个逃生门全部试过、全部无效：
+   - `-Pandroid.enableAppCompileTimeRClass=true`（单独用、以及配 `nonTransitiveRClass=true`）→ 字段仍非 final；
+     而 non-transitive 会额外让 `R.string.copy` 这类依赖库资源报「找不到符号」，属于反向代价；
+   - `-Pandroid.enableNewResourceProcessing=false` → 插件 apply 直接失败（选项在 AGP 9 已移除）；
+   - `-Pandroid.generateRJava=true` → 报「removed in version 4.1 of the Android Gradle plugin」。
+
+   唯一可行出路是把那 198 处 switch 改写成 if/else —— 上游代码风格级改动，fork 不做。等 gsantner 侧动手再说。
+
+AGP 9 适配期间改的 4 处，AGP 8/9 通用，**已保留在 `toolchain-upgrade`**：
+
+| 位置 | 改动 | 原因 |
+|---|---|---|
+| `gradle.properties` + `app/build.gradle` `buildFeatures` | 删 `android.defaults.buildfeatures.buildconfig=true`，改模块内 `buildConfig = true` / `resValues = true` | 该属性 AGP 9.0 起是硬错误；`resValue` 在 AGP 9 需要 `buildFeatures.resValues` |
+| `app/build.gradle` 末尾 `androidComponents` | 删 `setProperty("archivesBaseName", …)`，改用 `VariantOutput.outputFileName` | `archivesBaseName` 在 AGP 9 移除；新写法产物文件名与升级前逐字节一致 |
+| `build.gradle:43-47` 仓库顺序 | jitpack 提到 `maven.google.com` 之前 | 本机连 `maven.google.com` 是 connect timeout，Gradle 视为致命错误而非"未命中"，导致只在 jitpack 的 `com.github.*`（gene-rate / AppIntro）整体解析失败 |
+| `app/build.gradle` release `signingConfig` | 新增，显式 v1+v2+v3 | 见 §0.8 |
+
+撤回的 1 处：`getDefaultProguardFile('proguard-android.txt')` → `proguard-android-optimize.txt`。AGP 9 强制要求这个替换（旧文件含 `-dontoptimize`），但它会改变 release 的 R8 行为，既然 AGP 9 进不来，就恢复成与已验证基线一致的原值。**将来真上 AGP 9 时必须重新落地并复测 release 包。**
+
+**验证**：Gradle 9.5.1 + AGP 8.13.2 全量 `assembleFlavorDefaultDebug` 通过（编译 39s），装机 ACTION_VIEW 冒烟，
+标题分隔线 / 表格（含右对齐列）/ 任务列表复选框 / Prism kotlin 高亮 / 引用 / 脚注上标+↩ 全部与第一轮一致，logcat 无 FATAL。
+
+## 0.8 release 三签（2026-10-18 实测）
+
+本仓库原本**没有任何 signingConfig**（debug 包的 v1+v2 是 AGP 按 minSdk 21 自动决定的）。新增的 release 配置四个值全部读
+环境变量、缺失即 null（release 打包失败，debug 构建不受影响），并显式开 `enableV1/V2/V3Signing`。
+在 8.13 基线上单独构建 `assembleFlavorDefaultRelease` 验证（变量隔离，不与工具链混测）：
+apksigner（build-tools 37.0.0）报 v1/v2/v3 = true、v4 = false（只是没生成 .idsig，不影响校验），签名者 `CN=pisces312, O=pisces312`，
+R8 minify 同时通过（13m33s，产物 12.5MB）。
+
 ## 1. 当前状态（实测）
 
 | 项 | 值 | 来源 |
