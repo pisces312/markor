@@ -48,7 +48,7 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 - debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v163-2.16.1-flavorDefault-debug.apk`
   （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
   文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
-- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11525704 字节**
+- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11525670 字节**（`af984cd4` 那次）
   （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），
   R8 minify 46s 完成，dex 从 debug 的 18 个合成 2 个；唯一 R8 告警是 flexmark 引用 `java.awt.*`（桌面端代码路径，可忽略）
 - 单元测试：`./gradlew testFlavorDefaultDebugUnitTest`
@@ -56,7 +56,10 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
   与 `WikitextFileTests`（用例假定本机时区 ±1，本机 +8）。已在 HEAD 基线工作区实测，失败集合与升级后逐条一致，属既有环境失败，不是回归
 - R 常量（AGP 9）：`R.id.*` / `R.string.*` 是非 final 字段，**不能出现在 `case` 标签里**；全仓 20 处
   `switch`（含 `FormatRegistry` 那类 `static final int FORMAT_* = R.string.…` 间接别名）已改为 if/else-if 链。
-  新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`
+  新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`。
+  上游当年靠 `gradle.properties` 里的 `android.nonFinalResIds=false`（commit `5de71d5e`）保住 final 常量，
+  **AGP 9.4 已废弃并忽略这个开关**（构建时打 `The option setting ... is deprecated`，实测 R.jar 仍是 non-final），
+  所以改 if/else 绕不过去，别去调这个开关
 - 日志读取坑：PowerShell `>` 重定向写出 UTF-16LE，先 `iconv -f UTF-16LE -t UTF-8` 再 grep
 - PowerShell 调用坑：bash 里包 `-Command` 参数用单引号，否则 `$env` 被 bash 吞掉
 
