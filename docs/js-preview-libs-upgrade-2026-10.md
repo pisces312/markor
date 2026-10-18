@@ -16,6 +16,7 @@
 - **Step 2（删 `katex/auto-render.min.js`）已做完**（2026-10-18）：全仓零引用，删除后清单只差这一行。
 - **Step 3（KaTeX 0.19.0）已做完并验收通过**（2026-10-18）：63 个文件（css/js/mhchem + 60 字体）整批换，`katexVer` 0.16.10→0.19.0，其余 DOM 读数逐项不变，顶部截图差异只在状态栏；"字体有没有换对"改用 CDP `CSS.getPlatformFontsForNode` 量化（§4 Step 3）。
 - **Step 5（Mermaid 12.2.0）已做完并验收通过**（2026-10-18）：单文件替换，`div.mermaid[data-processed] svg` 仍为 1、`logLevel:5` 数字写法 v12 仍接受、四个节点名与边标签文本一个没丢；可见差异是 v12 的新样式（节点带 drop-shadow）。代价是 bundle +1,922,140 B、release 包 +593,295 B。**至此本单三项升级全部落地。**
+- **收尾（2026-10-18）**：用户真机复测反馈"没问题"，本单的验收闭环（CDP 探针 + 产物字节 + 人工点击）三条都齐了。`toolchain-upgrade` 已推送到 fork。
 
 ## 1. 现状（实测 2026-10-18，Step 0-5 全部完成）
 
