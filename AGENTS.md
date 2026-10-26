@@ -74,11 +74,12 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
   合并后跟随上游；此前 fork 实测删除不影响 dex 数：debug 仍 18 dex、release 仍 2 dex）。`ApplicationObject` 两侧改成同样的
   `extends android.app.Application`，该文件与上游逐字节一致
 - 单元测试：`./gradlew testFlavorDefaultDebugUnitTest`
-  基线：**178 跑 / 0 失败**（2026-10-26 起）。此前长期是 11 个 Windows 宿主环境失败，已修复两处（`fcb4fd7e` + `36f7a601`，
-  用户决定只修本地不提上游 ⇒ 这两个文件是新的 fork 分叉点）：
+  基线：**178 跑 / 0 失败**（2026-10-26 起）。此前长期是 11 个 Windows 宿主环境失败，已修复两处（`fcb4fd7e` + `36f7a601`）：
   ① `WikitextLinkResolver.java:159` 产线跨平台 bug——`replaceAll(":", File.separator)` 在 Windows 上 `\` 是非法正则替换串
-  （Android 上 separator=`/` 永不触发），改字面量 `replace`；② `WikitextFileTests` 生成器测试假定时区 ±1（生成器走
-  `SimpleDateFormat` 默认时区），测试内 `TimeZone.setDefault(GMT+01:00)` + finally 恢复，与宿主时区解耦
+  （Android 上 separator=`/` 永不触发），改字面量 `replace`；**已单独提 PR 上游：[gsantner/markor#2934](https://github.com/gsantner/markor/pull/2934)**
+  （分支 `fix-wikitext-separator`，基于 upstream/master cherry-pick，PR 合入后本地这笔与上游内容趋同）。
+  ② `WikitextFileTests` 生成器测试假定时区 ±1（生成器走 `SimpleDateFormat` 默认时区），测试内 `TimeZone.setDefault(GMT+01:00)` + finally 恢复，
+  与宿主时区解耦——**此笔只修本地未提上游**，该测试文件是 fork 分叉点
 - R 常量（AGP 9）：`R.id.*` / `R.string.*` 是非 final 字段，**不能出现在 `case` 标签里**；全仓 20 处
   `switch`（含 `FormatRegistry` 那类 `static final int FORMAT_* = R.string.…` 间接别名）已改为 if/else-if 链。
   新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`。
