@@ -27,21 +27,30 @@ public class WikitextFileTests {
         @Test
         public void createsCorrectContentsForNewWikitextFiles() {
             Locale.setDefault(Locale.ENGLISH);
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(2020, Calendar.DECEMBER, 24, 18, 0, 30);
-            calendar.setTimeZone(TimeZone.getTimeZone("GMT+01:00"));
-            Date date = calendar.getTime();
-            String expected = "Content-Type: text/x-zim-wiki\n" +
-                    "Wiki-Format: zim 0.6\n" +
-                    "Creation-Date: 2020-12-24T18:00:30+01:00\n" +
-                    "\n" +
-                    "====== My new wiki page ======\n" +
-                    "Created Thursday 24 December 2020\n";
-            // TODO: replace logic should not be necessary - find out why time and time zone is not created correctly in the test
-            String actual = WikitextActionButtons.createWikitextHeaderAndTitleContents("My_new_wiki_page", date, "Created");
-            String actualReplaced = actual.replaceAll("(?m)T1[78]:00:30.+$", "");
-            String expectedReplaced = expected.replaceAll("(?m)T1[78]:00:30.+$", "");
-            assertThat(actualReplaced).isEqualTo(expectedReplaced);
+            // Pin the default timezone: the generator formats with SimpleDateFormat
+            // (default TZ), and both the expected string and the T1[78] strip-regex
+            // below only hold on a +01:00 host. Restored so other tests keep the JVM default.
+            TimeZone originalTimeZone = TimeZone.getDefault();
+            TimeZone.setDefault(TimeZone.getTimeZone("GMT+01:00"));
+            try {
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(2020, Calendar.DECEMBER, 24, 18, 0, 30);
+                calendar.setTimeZone(TimeZone.getTimeZone("GMT+01:00"));
+                Date date = calendar.getTime();
+                String expected = "Content-Type: text/x-zim-wiki\n" +
+                        "Wiki-Format: zim 0.6\n" +
+                        "Creation-Date: 2020-12-24T18:00:30+01:00\n" +
+                        "\n" +
+                        "====== My new wiki page ======\n" +
+                        "Created Thursday 24 December 2020\n";
+                // TODO: replace logic should not be necessary - find out why time and time zone is not created correctly in the test
+                String actual = WikitextActionButtons.createWikitextHeaderAndTitleContents("My_new_wiki_page", date, "Created");
+                String actualReplaced = actual.replaceAll("(?m)T1[78]:00:30.+$", "");
+                String expectedReplaced = expected.replaceAll("(?m)T1[78]:00:30.+$", "");
+                assertThat(actualReplaced).isEqualTo(expectedReplaced);
+            } finally {
+                TimeZone.setDefault(originalTimeZone);
+            }
         }
     }
 
