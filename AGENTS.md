@@ -6,8 +6,9 @@
 ## 仓库
 
 - 本地 `D:\3rd-party-projects\markor`；origin = `pisces312/markor`（fork，public），upstream = `gsantner/markor`
-- `master` = 上游 `aff9492c`（2026-10-10）**+ 本 fork 的 29 个提交**（2026-10-18 以 `--ff-only` 合入两条工作分支，
-  即 flexmark 0.64.8 / 工具链 AGP 9.4.0 / 预览层 JS 资产升级；合后与 `toolchain-upgrade` 逐字节相同）
+- `master` = 上游 `adacc842`（**v2026.10.0**，2026-10-26）+ 本 fork 的 29 个提交 + 合并提交 `3c43292f`（2026-10-26）。
+  上游已 squash 合入本 fork 的 PR #2407（`2bbe048c` flexmark 0.64.8），并自行做了 minSdk 21 + 移除 multidex——
+  `ApplicationObject.java`、`FlexmarkKatexExtension.java` 与上游逐字节相同，`flexmark-upgrade` 分支的历史使命结束
 - 工作分支 `flexmark-upgrade`（已合入 master）：上游 PR #2407 的 8 个提交 cherry-pick（flexmark 0.64.8 + minSdk 21 + androidx/commons-io）
 - 工作分支 `toolchain-upgrade`（基于 flexmark-upgrade，已合入 master）：Gradle wrapper 9.6.1 + AGP 9.4.0，
   前置改动是把 15 个文件里 20 处 `switch (R.*)` 改成 if/else-if 链（AGP 9 的 R 字段非 final，`case R.*` 不再是常量表达式）
@@ -31,6 +32,13 @@
 | GRADLE_USER_HOME | `D:\dev\.gradle` |
 | 依赖镜像 | **写在本仓库里**（`build.gradle:21-30` buildscript、`:45-53` allprojects）：阿里云 google/public（buildscript 另加 gradle-plugin）排最前，mavenCentral/jitpack/google() 兜底。**无全局 init script**（`D:\dev\.gradle\init.d\` 已清空，构建命令不再带 `-I`）；`GRADLE_USER_HOME=D:\dev\.gradle` 仍是全局共享缓存——各项目声明同一组仓库 id ⇒ 缓存只热一次 |
 
+**与上游的工具链分叉（2026-10-26 起）**：上游 v2026.10.0 先升 AGP 9.4.1/Gradle 9.6.0（`da83752e`）又**降回 AGP 8.13.0/Gradle 8.14.6**
+（`adacc842`，理由 "Gradle 9.x has some breaking changes"），并把 `android.nonFinalResIds=false` 加了回去（AGP 8 下有效，保住 `switch (R.*)` 写法）；
+上游还在 `build.gradle` 里**重新加回了 `maven.google.com`**（本机实测连不上，fork 必须保持删除）。本 fork 决策：**留在 AGP 9.4.0/Gradle 9.6.1**。
+后果：每次同步上游，`gradle/wrapper/gradle-wrapper.properties`、`build.gradle`、`gradle.properties`、`app/build.gradle` 四个文件必冲突，
+前三个直接取 fork 侧（`git checkout --ours`），`app/build.gradle` 需手工融合（吸收上游版本号/依赖升级，保留 fork 的签名/Java17/`androidComponents`/`.debug` 后缀）。
+上游新代码若引入 `case R.*` 必须转 if/else（本次 v2026.10.0 合并实测：上游新增代码零处 `case R.*`，合并后全仓仍为 0）。
+
 **网络坑（2026-10-18 逐主机实测）**：唯一连不上的是 **`maven.google.com`**（旧重定向主机，curl 20s 超时 / 000）；
 `google()` 实际指向的 `dl.google.com/dl/android/maven2`、`repo.maven.apache.org`、`jitpack.io` 与阿里云全部直连可用
 （404 = 能连通，仓库根没有索引页属正常）。原先"直连 Maven Central/Google 会静默卡死、必须走镜像 init script"是错的记录，
@@ -53,8 +61,8 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 | flavorGplay | Google Play 版 | `IS_GPLAY_BUILD=true` |
 | flavorAtest | 测试版 | 独立包名 `net.gsantner.markor_test`，`IS_TEST_BUILD=true` |
 
-- 版本：`versionName 2.16.1` / `versionCode 163`（`app/build.gradle:26-27`）
-- debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v163-2.16.1-flavorDefault-debug.apk`
+- 版本：`versionName 2026.10.0` / `versionCode 164`（`app/build.gradle`，随上游 v2026.10.0；上游改用日历年版本 scheme）
+- debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v164-2026.10.0-flavorDefault-debug.apk`（16,043,489 B，2026-10-26 合并后实测）
   （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
   文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
 - release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11,867,781 字节**（2026-10-18 Step 5 Mermaid 之后；Step 3 KaTeX 后是 11,274,486，`57d789a6` 那次是 11,521,389）
@@ -62,12 +70,13 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
   dex 从 debug 的 18 个合成 2 个；**构建日志已零 WARNING**——flexmark 桌面端类引用由 `app/proguard-rules.pro`
   末尾 7 条精确 `-dontwarn`（java.awt / java.beans / javax.imageio / javax.lang.model / javax.swing /
   org.apache.commons.{beanutils,collections}）消掉，原先是 45 行 `Missing class`
-- multidex：`androidx.multidex:multidex` 依赖已删（AGP 点名 minSdk≥21 不需要），`ApplicationObject` 相应改
-  `extends android.app.Application`；但 **`multiDexEnabled true` 保留**——它管"允许多 dex 产物"，与运行库无关，
-  实测删后 debug 仍 18 dex、release 仍 2 dex
+- multidex：`androidx.multidex:multidex` 依赖与 `multiDexEnabled true` **均已删**（上游 `11b765c1` 在 v2026.10.0 里自己做了同一件事，
+  合并后跟随上游；此前 fork 实测删除不影响 dex 数：debug 仍 18 dex、release 仍 2 dex）。`ApplicationObject` 两侧改成同样的
+  `extends android.app.Application`，该文件与上游逐字节一致
 - 单元测试：`./gradlew testFlavorDefaultDebugUnitTest`
   基线：178 跑 / **11 失败**，全部在 `WikitextLinkResolverTests`（链接串里的 `:` 在 Windows 上是非法路径字符）
-  与 `WikitextFileTests`（用例假定本机时区 ±1，本机 +8）。已在 HEAD 基线工作区实测，失败集合与升级后逐条一致，属既有环境失败，不是回归
+  与 `WikitextFileTests`（用例假定本机时区 ±1，本机 +8）。已在 HEAD 基线工作区实测，失败集合与升级后逐条一致，属既有环境失败，不是回归；
+  v2026.10.0 合并后（2026-10-26）复测仍是 178/11，逐条相同
 - R 常量（AGP 9）：`R.id.*` / `R.string.*` 是非 final 字段，**不能出现在 `case` 标签里**；全仓 20 处
   `switch`（含 `FormatRegistry` 那类 `static final int FORMAT_* = R.string.…` 间接别名）已改为 if/else-if 链。
   新增按钮分发一律别再用 `switch (R.*)`；`android.R.id.home` 等框架 R 仍是常量，可以进 `case`。
