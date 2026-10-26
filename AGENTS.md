@@ -65,7 +65,7 @@ GRADLE_USER_HOME=D:/dev/.gradle ./gradlew :app:assembleFlavorDefaultDebug
 - debug 产物：`app/build/outputs/apk/flavorDefault/debug/net.gsantner.markor-v164-2026.10.0-flavorDefault-debug.apk`（16,043,489 B，2026-10-26 合并后实测）
   （文件名由 `app/build.gradle` 末尾 `androidComponents` 重命名块生成，不再依赖已删除的 `archivesBaseName`；
   文件名里的 `net.gsantner.markor` 只是前缀，debug 实际包名是 `net.gsantner.markor.debug`，见下）
-- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **11,867,781 字节**（2026-10-18 Step 5 Mermaid 之后；Step 3 KaTeX 后是 11,274,486，`57d789a6` 那次是 11,521,389）
+- release 产物（AGP 9 + Java 17 + optimize 规则实测）：同目录 `...-flavorDefault-release.apk` **12,233,707 字节**（2026-10-26 v2026.10.0 合并后，R8 ~49s、2 dex、v1+v2+v3 签名复验通过，证书 `CN=pisces312` SHA-256 `abadebd2…53ee0b90` 与既往一致；此前 2026-10-18 Mermaid 后是 11,867,781）
   （体积随 `GITHASH`/`GITMSG` BuildConfig 字段小幅波动，别拿字节数当回归判据），R8 minify ~40s，
   dex 从 debug 的 18 个合成 2 个；**构建日志已零 WARNING**——flexmark 桌面端类引用由 `app/proguard-rules.pro`
   末尾 7 条精确 `-dontwarn`（java.awt / java.beans / javax.imageio / javax.lang.model / javax.swing /
